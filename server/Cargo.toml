@@ -20,5 +20,12 @@ async-stream = "0.3.6"
 archflow = "0.1.4"
 tokio = "1.47.0"
 tokio-util = {version = "0.7.15", features=["io"]}
+anyhow = "1.0.98"
+
+zip = "=2.4.2"
+
+#bytes = "1.10.1"
+#zip = "4.3.0"
+#zip = "4.3.0"
 
 #https://docs.rs/archflow/latest/archflow/
