@@ -1,5 +1,6 @@
 
 
+use my_web_app::{Cluster, ClusterRequest, Genbank};
 use web_sys::window;
 use yew::prelude::*;
 
@@ -27,6 +28,12 @@ pub enum Msg {
 
     OpenPage(CurrentPage),
 
+    GetCluster(String),
+    SetCluster(Option<Cluster>),
+
+    GetGenbank(String),
+    SetGenbank(Option<Genbank>),
+
 }
 
 
@@ -35,6 +42,10 @@ pub enum Msg {
 /// State of the page
 pub struct Model {
     pub current_page: CurrentPage,
+
+    pub current_genbank: Option<Genbank>,
+    pub current_cluster: Option<Cluster>,
+        
 }
 
 impl Component for Model {
@@ -45,10 +56,15 @@ impl Component for Model {
 
     ////////////////////////////////////////////////////////////
     /// Create a new component
-    fn create(_ctx: &Context<Self>) -> Self {
+    fn create(ctx: &Context<Self>) -> Self {
+
+        ctx.link().send_message(Msg::GetCluster("GUT_GENOME277127-scaffold_21_cluster_1".to_string()));
+        ctx.link().send_message(Msg::GetGenbank("GUT_GENOME277127-scaffold_21_cluster_1".to_string()));
 
         Self {
             current_page: CurrentPage::Home,
+            current_genbank: None,
+            current_cluster: None
         }
     }
 
@@ -57,13 +73,81 @@ impl Component for Model {
 
     ////////////////////////////////////////////////////////////
     /// Handle an update message
-    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
+    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
 
             Msg::OpenPage(page) => {
                 self.current_page = page;
                 true
-            }
+            },
+
+            Msg::SetCluster(data) => {
+                log::debug!("got {:?}",data);
+                self.current_cluster = data;
+                true
+            },
+
+            Msg::GetCluster(id) => {
+
+                let s=ClusterRequest {
+                    cluster_id: id
+                };
+
+                let json = serde_json::to_string(&s).expect("Failed to generate json");
+                //log::debug!("sending {}", json);
+                async fn get_data(json: String) -> Msg {
+                    let client = reqwest::Client::new();
+                    let res: Cluster = client.post(format!("{}/get_cluster",get_host_url()))
+                        .header("Content-Type", "application/json")
+                        .body(json)
+                        .send()
+                        .await
+                        .expect("Failed to send request")
+                        .json()
+                        .await
+                        .expect("Failed to get table data");
+
+                    Msg::SetCluster(Some(res))
+                }
+                ctx.link().send_future(get_data(json));
+                false
+            },
+
+            Msg::SetGenbank(data) => {
+                log::debug!("got {:?}",data);
+                self.current_genbank = data;
+                true
+            },
+
+            Msg::GetGenbank(id) => {
+
+                let s=ClusterRequest {
+                    cluster_id: id
+                };
+
+                let json = serde_json::to_string(&s).expect("Failed to generate json");
+                //log::debug!("sending {}", json);
+                async fn get_data(json: String) -> Msg {
+                    let client = reqwest::Client::new();
+                    let res: Genbank = client.post(format!("{}/get_genbank",get_host_url()))
+                        .header("Content-Type", "application/json")
+                        .body(json)
+                        .send()
+                        .await
+                        .expect("Failed to send request")
+                        .json()
+                        .await
+                        .expect("Failed to get table data");
+
+                    
+
+                    Msg::SetGenbank(Some(res))
+                }
+                ctx.link().send_future(get_data(json));
+                false
+            },
+
+
 
         }
     }
@@ -93,6 +177,20 @@ impl Component for Model {
             <div>
                 { html_top_buttons }
                 { current_page }
+
+                <p>
+                    { format!{"{:?}",self.current_cluster} }
+                </p>
+
+                <pre>
+                { 
+                    if let Some(s) = &self.current_genbank {
+                        { s.data.clone()  }
+                    } else {
+                        { "".to_string() }
+                    }
+                } 
+                </pre>
             </div>
         }
     }

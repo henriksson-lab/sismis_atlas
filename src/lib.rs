@@ -21,6 +21,16 @@ pub struct Cluster {
 
 
 
+
+////////////////////////////////////////////////////////////
+/// 
+#[derive(Debug, Deserialize, Serialize)]
+pub struct Genbank {
+    pub data: String,
+}
+
+
+
 ////////////////////////////////////////////////////////////
 /// 
 #[derive(Debug, Deserialize, Serialize)]

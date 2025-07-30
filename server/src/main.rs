@@ -6,7 +6,9 @@ use std::path::{PathBuf};
 use std::io::{BufReader};
 
 use actix_files::Files;
-use actix_web::{web, web::Data, App, HttpResponse, HttpServer};
+use actix_web::web::Json;
+use actix_web::{web, web::Data, App, HttpResponse, HttpServer, post};
+use my_web_app::{ClusterRequest, Genbank};
 use serde::Deserialize;
 use serde::Serialize;
 use std::sync::Mutex;
@@ -35,15 +37,19 @@ pub struct ConfigFile {
 
 
 
-use actix_web::{get, Responder};
+use actix_web::{Responder};  //get, 
 
 
 ////////////////////////////////////////////////////////////
 /// REST entry point
-#[get("/get_cluster")]
-async fn get_cluster(server_data: Data<Mutex<ServerData>>) -> impl Responder {
+#[post("/get_cluster")]
+async fn get_cluster(server_data: Data<Mutex<ServerData>>, req_body: web::Json<ClusterRequest>) -> impl Responder {
+
+    println!("{:?}",req_body);
+    let Json(req) = req_body;
+
     //info!("metadata: {:?}", &server_data.db_metadata);
-    let ret = query_cluster(&server_data, &String::new()).
+    let ret = query_cluster(&server_data, &req.cluster_id).
     expect("failed to access sql").expect("failed to get cluster");
     serde_json::to_string(&ret)
 }
@@ -51,15 +57,23 @@ async fn get_cluster(server_data: Data<Mutex<ServerData>>) -> impl Responder {
 
 ////////////////////////////////////////////////////////////
 /// REST entry point
-#[get("/get_genbank")]
-async fn get_genbank(server_data: Data<Mutex<ServerData>>) -> impl Responder {
+#[post("/get_genbank")]  //would be simpler if we used get
+async fn get_genbank(server_data: Data<Mutex<ServerData>>, req_body: web::Json<ClusterRequest>) -> impl Responder {
     //info!("metadata: {:?}", &server_data.db_metadata);
 
-    let e ="GUT_GENOME277127-scaffold_21_cluster_1".to_string();
+    println!("{:?}",req_body);
+    let Json(req) = req_body;
 
-    let ret = query_genbank(&server_data, &e).
+//    let e ="GUT_GENOME277127-scaffold_21_cluster_1".to_string();
+
+    let ret = query_genbank(&server_data, &req.cluster_id).
             expect("failed to access genbank");
-    ret
+//    ret   ///// would be more efficient!!
+
+    let ret = Genbank {
+        data: String::from_utf8_lossy(ret.as_slice()).to_string()
+    };
+    serde_json::to_string(&ret)
 }
 
 
