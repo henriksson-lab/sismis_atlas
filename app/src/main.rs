@@ -2,7 +2,7 @@ pub mod core_model;
 pub mod model_landing;
 pub mod model_about;
 pub mod model_genbank;
-pub mod webgl;
+pub mod component_umap;
 pub mod umap_index;
 
 use crate::core_model::*;

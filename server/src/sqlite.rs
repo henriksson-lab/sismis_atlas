@@ -7,8 +7,6 @@ use std::sync::Mutex;
 use crate::ServerData;
 
 
-
-
 /*
 CREATE TABLE IF NOT EXISTS "clusters"(
 "sequence_id" TEXT, "cluster_id" TEXT, "start" TEXT, "end" TEXT,
@@ -23,10 +21,6 @@ pub fn get_sequence_sql(
     req: &SequenceRequest //String
 ) -> Result<Vec<Cluster>> {
      
-//    let _search_id = req.
-
-//    let q = "SELECT * from clusters where sequence_id LIKE ?1".to_string();  // WHERE clusterid='foo'  _search_id
-    
     let server_data =server_data.lock().unwrap();
         
     let mut stmt = server_data.conn.prepare("SELECT * from clusters where sequence_id LIKE ?1")?;

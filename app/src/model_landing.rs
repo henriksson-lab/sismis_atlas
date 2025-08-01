@@ -1,7 +1,7 @@
 use yew::prelude::*;
 
 use crate::core_model::*;
-use crate::webgl::UmapView;
+use crate::component_umap::UmapView;
 
 
 
@@ -37,14 +37,6 @@ impl Model {
         html! {
 
             <div>
-
-                <div>
-                    {"Color by:"}
-                    <select>
-                        <option>{"source"}</option>
-                        <option>{"other"}</option>
-                    </select>                    
-                </div>
 
                 <UmapView on_cell_hovered={on_cell_hovered} on_cell_clicked={on_cell_clicked}/> //// we really do not want to re-render this if needed! how to avoid?
                 <p>

@@ -1,4 +1,4 @@
-use my_web_app::{Cluster, ClusterRequest, Genbank, SequenceRequest};
+use my_web_app::{Cluster, ClusterRequest, Genbank, SequenceRequest, UmapMetadata};
 use web_sys::window;
 use yew::prelude::*;
 
@@ -49,7 +49,8 @@ pub struct Model {
     pub current_genbank: Option<Vec<Genbank>>,
     pub current_table_meta: Option<Vec<Cluster>>,
 
-    pub hover_sequence: Option<String>
+    pub hover_sequence: Option<String>,
+
         
 }
 
@@ -65,6 +66,7 @@ impl Component for Model {
 
         //ctx.link().send_message(Msg::GetCluster("GUT_GENOME277127-scaffold_21_cluster_1".to_string()));
         //ctx.link().send_message(Msg::GetGenbank("GUT_GENOME277127-scaffold_21_cluster_1".to_string()));
+
 
         Self {
             current_page: CurrentPage::Home,
@@ -172,7 +174,10 @@ impl Component for Model {
 
 
                 true
-            }
+            },
+
+
+
 
         }
     }

@@ -28,8 +28,8 @@ pub struct Cluster {
 pub struct DatabaseColumnMeta {
     pub name: String,
     pub list_levels: Vec<String>, //0...n, different factor levels
-    pub map_levels: BTreeMap<String, i32>, // need not serialize? TODO
-    pub values: Vec<i32> //enough levels? i16?
+    pub map_levels: BTreeMap<String, u8>, 
+    pub values: Vec<u8> //if we need more levels, should add specialized types
 }
 
 // #[serde(skip)]  // if we want to restore map_levels ourselves
@@ -58,9 +58,9 @@ impl DatabaseColumnMeta {
         outlist.reserve(inlist.len());
         for e in inlist {
             if let Some(i) = self.map_levels.get(e) {
-                outlist.push(*i as i32);
+                outlist.push(*i as u8);
             } else {
-                let i = self.list_levels.len() as i32;
+                let i = self.list_levels.len() as u8;
                 self.map_levels.insert(e.clone(), i);
                 self.list_levels.push(e.clone());
                 outlist.push(i);
@@ -74,8 +74,9 @@ impl DatabaseColumnMeta {
 
 ////////////////////////////////////////////////////////////
 /// 
+#[derive(Debug, Deserialize, Serialize)]
 pub struct UmapMetadata {
-    colorings: HashMap<String, DatabaseColumnMeta>
+    pub colorings: HashMap<String, DatabaseColumnMeta>
 }
 
 impl UmapMetadata {

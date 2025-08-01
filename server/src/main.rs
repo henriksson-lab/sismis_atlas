@@ -10,7 +10,7 @@ use std::io::{BufReader};
 use actix_files::Files;
 use actix_web::web::Json;
 use actix_web::{web, web::Data, App, HttpResponse, HttpServer, post, get};
-use my_web_app::{ClusterRequest, Genbank, SequenceRequest, UmapMetadata};
+use my_web_app::{ClusterRequest, SequenceRequest, UmapMetadata};
 use serde::Deserialize;
 use serde::Serialize;
 use std::sync::Mutex;
@@ -43,6 +43,18 @@ pub struct ConfigFile {
 
 
 use actix_web::{Responder}; 
+
+
+
+
+////////////////////////////////////////////////////////////
+/// REST entry point
+#[get("/get_coloring")]
+async fn get_coloring(server_data: Data<Mutex<ServerData>>) -> impl Responder {
+
+    let server_data =server_data.lock().unwrap();
+    serde_json::to_string(&server_data.umeta)
+}
 
 
 ////////////////////////////////////////////////////////////
@@ -150,6 +162,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .app_data(data.clone())
             .wrap(actix_web::middleware::Logger::default())  //for debugging
+            .service(get_coloring)
             .service(get_sequence)
             .service(get_genbank)
             .service(get_umap)

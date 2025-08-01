@@ -1,7 +1,17 @@
 
 precision mediump float;
 
-attribute vec2 a_position;
+attribute vec3 a_position;
+varying highp vec3 color;
+
+
+vec3 hsv2rgb(vec3 c)
+{
+    vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+    vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+    return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+}
+
 
 void main() {
 
@@ -10,54 +20,20 @@ void main() {
         1.0/1023.0 * 2.0,
         1.0/1023.0 * 2.0
     );
-    vec2 scaled = a_position * wh;
+
+    vec2 a_position2 = vec2(a_position.x, a_position.y);
+
+    vec2 scaled = a_position2 * wh;
     vec2 transformed = scaled - vec2(1.0,1.0);
     gl_Position = vec4(transformed.x, -transformed.y, 0.0, 1.0);   // Invert camera y to match 
 
     //Set size of points
     gl_PointSize = 5.0;
+
+
+    //Set color via HSV. Then forward color
+    vec3 hsv = vec3(a_position.z, 1.0, 1.0);
+    color = hsv2rgb(hsv);
 }
 
 
-
-
-
-
-// uniform mat3 u_matrix;
-
-
-
-/*
-    vec2 base = vec2(-1.0,-1.0);
-    vec2 wh = vec2(800.0,600.0);
-
-    vec2 trans = a_position - base;    // vec2(-1.0,-1.0);
-    vec2 scaled = trans*wh;
-    gl_Position = vec4(scaled, 0.0, 1.0);
-*/
-
-
-
-/*
-
-
-  // starting with the view projection matrix
-  // compute a matrix for the F
-  var matrix = m4.translate(viewProjectionMatrix, x, 0, y);
- 
-  // Set the matrix.
-  gl.uniformMatrix4fv(matrixLocation, false, matrix);
-
-//   gl_Position = vec4((u_matrix * vec3(a_position, 1)).xy, 0, 1);
-
-*/
-
-
-/*
-orig
-
-    gl_Position = vec4(a_position, 0.0, 1.0);
-    gl_PointSize = 1.0;
-
-
-*/
