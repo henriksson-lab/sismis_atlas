@@ -98,7 +98,7 @@ impl Model {
             }
 
             html! { 
-                <svg viewBox={format!("0 0 {} {}", seq.len(), cur_y+50)}>
+                <svg viewBox={format!("0 0 {} {}", seq.len(), cur_y+10)}>
                     <line x1=0 x2={format!("{}",seq.len())} y1=1 y2=1 stroke="black"/>
                     { list_features }
                 </svg>

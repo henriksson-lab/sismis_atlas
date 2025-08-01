@@ -1,18 +1,15 @@
-
-
-
 use my_web_app::{Cluster, ClusterRequest, Genbank, SequenceRequest};
 use web_sys::window;
 use yew::prelude::*;
 
-use crate::webgl::UmapView;
 
 ////////////////////////////////////////////////////////////
 /// Which page is currently being shown?
 #[derive(Debug)]
 #[derive(PartialEq)]
 pub enum CurrentPage {
-    Home
+    Home,
+    About
 }
 
 
@@ -185,21 +182,9 @@ impl Component for Model {
     /// Top renderer of the page
     fn view(&self, ctx: &Context<Self>) -> Html {
 
-
-        let on_cell_hovered= ctx.link().callback(move |name: Option<String>| {
-            //format!("Bye {}", name)
-            //log::debug!("meah");
-            Msg::HoverSequence(name)
-        });
-
-        let on_cell_clicked= ctx.link().callback(move |name: Option<String>| {
-            //format!("Bye {}", name)
-            //log::debug!("meah");
-            Msg::ClickSequence(name)
-        });
-
         let current_page = match self.current_page { 
             CurrentPage::Home => self.view_landing_page(&ctx),
+            CurrentPage::About => self.view_about_pane(&ctx),
         };
 
 
@@ -208,6 +193,7 @@ impl Component for Model {
                 <div id="topmenu" class="topnav">
                     <div class="topnav-right">
                         <a class={active_if(self.current_page==CurrentPage::Home)}       onclick={ctx.link().callback(|_| Msg::OpenPage(CurrentPage::Home))}>{"Home"}</a> 
+                        <a class={active_if(self.current_page==CurrentPage::About)}      onclick={ctx.link().callback(|_| Msg::OpenPage(CurrentPage::About))}>{"About"}</a> 
                     </div>
                 </div>
             </header>        
@@ -217,17 +203,6 @@ impl Component for Model {
             <div>
                 { html_top_buttons }
                 { current_page }
-
-                <UmapView on_cell_hovered={on_cell_hovered} on_cell_clicked={on_cell_clicked}/> //// we really do not want to re-render this if needed! how to avoid?
-                { format!("{}", if let Some(c) = &self.hover_sequence {c.clone()} else {"No cell hovered".to_string()} )  }
-
-                { self.view_cluster_table(ctx) }
-                { self.view_genbank_svgs(ctx) }
-
-
-                { self.view_genbank_table(ctx) }
-
-
             </div>
         }
     }
@@ -238,75 +213,6 @@ impl Component for Model {
 
 
 
-
-impl Model {
-
-
-    ////////////////////////////////////////////////////////////
-    /// x
-    pub fn view_cluster_table(&self, ctx: &Context<Self>) -> Html {
-
-        if let Some(list_cluser) = &self.current_table_meta {
-
-            let list_rows = list_cluser.iter().map(|c| {
-
-                let cluster_id=c.cluster_id.clone();
-                let on_click_cluster= ctx.link().callback(move |_e: MouseEvent| {
-                    //format!("Bye {}", name)
-                    log::debug!("get genbank");
-                    Msg::GetGenbank(vec![cluster_id.clone()])
-                });
-
-
-                html! {
-                    <tr> 
-                        <td> { c.sequence_id.clone() } </td>
-                        <td>
-                            <a onclick={on_click_cluster}>
-                             { c.cluster_id.clone() }
-                            </a>
-                        </td>
-                        <td> { c.start.clone() } </td>
-                        <td> { c.end.clone() } </td>
-                        <td> { c.average_p.clone() } </td>
-
-                        <td> { c.max_p.clone() } </td>
-                        <td> { c.proteins.clone() } </td>
-                        <td> { c.domains.clone() } </td>
-                        <td> { c.type2.clone() } </td>
-                        <td> { c.filepath.clone() } </td>
-                    </tr>
-                }
-            }).collect::<Html>();
-
-            html! {
-                <table>
-                    <tr>
-                        <th> {"sequence_id"} </th>
-                        <th> {"cluster_id"} </th>
-                        <th> {"start"} </th>
-                        <th> {"end"} </th>
-                        <th> {"average_p"} </th>
-
-                        <th> {"max_p"} </th>
-                        <th> {"proteins"} </th>
-                        <th> {"domains"} </th>
-                        <th> {"type2"} </th>
-                        <th> {"filepath"} </th>
-
-                    </tr>
-                    { list_rows }
-                </table>
-            }
-
-        } else {
-            html! { "" }
-        }
-
-    }
-
-
-}
 
 
 
