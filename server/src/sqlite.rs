@@ -21,9 +21,9 @@ CREATE TABLE IF NOT EXISTS "clusters"(
 pub fn query_cluster(
     server_data: &Data<Mutex<ServerData>>,
     _search_id: &String
-) -> Result<Option<Cluster>> {
+) -> Result<Vec<Cluster>> {
      
-    let q = "SELECT * from clusters LIMIT 1".to_string();  // WHERE clusterid='foo'
+    let q = "SELECT * from clusters LIMIT 5".to_string();  // WHERE clusterid='foo'  _search_id
     
     let server_data =server_data.lock().unwrap();
         
@@ -45,17 +45,19 @@ pub fn query_cluster(
         Ok(out)
     })?;
 
+    let mut all_rows = Vec::new();
     for row in rows {
         match row {
             Ok(row) => {
-                return Ok(Some(row));
+                all_rows.push(row);
             },
             Err(e) => {
                 eprintln!("Error: {e:?}")
             }
         }
     }
-    Ok(None)
+    return Ok(all_rows);
+//    Ok(None)
 }
         
 

@@ -1,8 +1,11 @@
 
 
+
 use my_web_app::{Cluster, ClusterRequest, Genbank};
 use web_sys::window;
 use yew::prelude::*;
+
+use crate::webgl::UmapView;
 
 ////////////////////////////////////////////////////////////
 /// Which page is currently being shown?
@@ -29,10 +32,10 @@ pub enum Msg {
     OpenPage(CurrentPage),
 
     GetCluster(String),
-    SetCluster(Option<Cluster>),
+    SetCluster(Option<Vec<Cluster>>),
 
     GetGenbank(String),
-    SetGenbank(Option<Genbank>),
+    SetGenbank(Option<Vec<Genbank>>),
 
 }
 
@@ -43,8 +46,8 @@ pub enum Msg {
 pub struct Model {
     pub current_page: CurrentPage,
 
-    pub current_genbank: Option<Genbank>,
-    pub current_cluster: Option<Cluster>,
+    pub current_genbank: Option<Vec<Genbank>>,
+    pub current_cluster: Option<Vec<Cluster>>,
         
 }
 
@@ -82,7 +85,7 @@ impl Component for Model {
             },
 
             Msg::SetCluster(data) => {
-                log::debug!("got {:?}",data);
+                //log::debug!("got {:?}",data);
                 self.current_cluster = data;
                 true
             },
@@ -97,7 +100,7 @@ impl Component for Model {
                 //log::debug!("sending {}", json);
                 async fn get_data(json: String) -> Msg {
                     let client = reqwest::Client::new();
-                    let res: Cluster = client.post(format!("{}/get_cluster",get_host_url()))
+                    let res: Vec<Cluster> = client.post(format!("{}/get_cluster",get_host_url()))
                         .header("Content-Type", "application/json")
                         .body(json)
                         .send()
@@ -114,7 +117,7 @@ impl Component for Model {
             },
 
             Msg::SetGenbank(data) => {
-                log::debug!("got {:?}",data);
+                //log::debug!("got {:?}",data);
                 self.current_genbank = data;
                 true
             },
@@ -129,7 +132,7 @@ impl Component for Model {
                 //log::debug!("sending {}", json);
                 async fn get_data(json: String) -> Msg {
                     let client = reqwest::Client::new();
-                    let res: Genbank = client.post(format!("{}/get_genbank",get_host_url()))
+                    let res: Vec<Genbank> = client.post(format!("{}/get_genbank",get_host_url()))
                         .header("Content-Type", "application/json")
                         .body(json)
                         .send()
@@ -138,8 +141,6 @@ impl Component for Model {
                         .json()
                         .await
                         .expect("Failed to get table data");
-
-                    
 
                     Msg::SetGenbank(Some(res))
                 }
@@ -156,6 +157,17 @@ impl Component for Model {
     ////////////////////////////////////////////////////////////
     /// Top renderer of the page
     fn view(&self, ctx: &Context<Self>) -> Html {
+
+
+        let on_cell_hovered: Callback<Option<String>, ()> = Callback::from(move |_name: Option<String>| {
+            //format!("Bye {}", name)
+            log::debug!("meah");
+        });
+
+        let on_cell_clicked: Callback<Option<String>, ()> = Callback::from(move |_name: Option<String>| {
+            //format!("Bye {}", name)
+            log::debug!("wheee");
+        });
 
 
         let current_page = match self.current_page { 
@@ -178,27 +190,81 @@ impl Component for Model {
                 { html_top_buttons }
                 { current_page }
 
-                <p>
-                    { format!{"{:?}",self.current_cluster} }
-                </p>
+                <UmapView on_cell_hovered={on_cell_hovered} on_cell_clicked={on_cell_clicked}/> //// we really do not want to re-render this if needed! how to avoid?
 
-                <pre>
-                { 
-                    if let Some(s) = &self.current_genbank {
-                        { s.data.clone()  }
-                    } else {
-                        { "".to_string() }
-                    }
-                } 
-                </pre>
+                { self.view_cluster_table(ctx) }
+                { self.view_genbank_svgs(ctx) }
+
+
+                { self.view_genbank_table(ctx) }
+
+
             </div>
         }
     }
 
 
 
+}
 
 
+
+
+impl Model {
+
+
+    ////////////////////////////////////////////////////////////
+    /// x
+    pub fn view_cluster_table(&self, _ctx: &Context<Self>) -> Html {
+
+        if let Some(list_cluser) = &self.current_cluster {
+
+            let list_rows = list_cluser.iter().map(|c| {
+                html! {
+                    <tr> 
+                        <td> { c.sequence_id.clone() } </td>
+                        <td> { c.cluster_id.clone() } </td>
+                        <td> { c.start.clone() } </td>
+                        <td> { c.end.clone() } </td>
+                        <td> { c.average_p.clone() } </td>
+
+                        <td> { c.max_p.clone() } </td>
+                        <td> { c.proteins.clone() } </td>
+                        <td> { c.domains.clone() } </td>
+                        <td> { c.type2.clone() } </td>
+                        <td> { c.filepath.clone() } </td>
+
+
+//                        { format!("{:?}", val.clone()) } 
+                    </tr>
+                }
+            }).collect::<Html>();
+
+            html! {
+                <table>
+                    <tr>
+                        <th> {"sequence_id"} </th>
+                        <th> {"cluster_id"} </th>
+                        <th> {"start"} </th>
+                        <th> {"end"} </th>
+                        <th> {"average_p"} </th>
+
+                        <th> {"max_p"} </th>
+                        <th> {"proteins"} </th>
+                        <th> {"domains"} </th>
+                        <th> {"type2"} </th>
+                        <th> {"filepath"} </th>
+
+                    </tr>
+                    { list_rows }
+                </table>
+            }
+
+        } else {
+            html! { "" }
+        }
+
+    }
 
 
 }

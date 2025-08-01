@@ -7,8 +7,8 @@ use std::io::{BufReader};
 
 use actix_files::Files;
 use actix_web::web::Json;
-use actix_web::{web, web::Data, App, HttpResponse, HttpServer, post};
-use my_web_app::{ClusterRequest, Genbank};
+use actix_web::{web, web::Data, App, HttpResponse, HttpServer, post, get};
+use my_web_app::{ClusterRequest, Genbank, UmapData};
 use serde::Deserialize;
 use serde::Serialize;
 use std::sync::Mutex;
@@ -50,7 +50,8 @@ async fn get_cluster(server_data: Data<Mutex<ServerData>>, req_body: web::Json<C
 
     //info!("metadata: {:?}", &server_data.db_metadata);
     let ret = query_cluster(&server_data, &req.cluster_id).
-    expect("failed to access sql").expect("failed to get cluster");
+        expect("failed to access sql");
+        //expect("failed to get cluster");
     serde_json::to_string(&ret)
 }
 
@@ -73,8 +74,65 @@ async fn get_genbank(server_data: Data<Mutex<ServerData>>, req_body: web::Json<C
     let ret = Genbank {
         data: String::from_utf8_lossy(ret.as_slice()).to_string()
     };
+
+    let ret = vec![ret];
+
     serde_json::to_string(&ret)
 }
+
+
+
+
+
+////////////////////////////////////////////////////////////
+/// REST entry point
+#[get("/get_umap")]  //would be simpler if we used get
+async fn get_umap(_server_data: Data<Mutex<ServerData>>) -> impl Responder {
+
+    let ret = load_umap_data();
+
+    serde_json::to_string(&ret)
+}
+
+
+
+
+
+
+pub fn load_umap_data() -> UmapData {
+
+
+
+    // This list of vertices
+    let num_points = 10;
+    let mut vertices: Vec<f32> = vec![];
+    let mut ids: Vec<String> = Vec::new();
+
+    use rand::Rng;
+    let mut rng = rand::rng();
+    for i in 0..(num_points*2) {
+        let v = rng.random_range(0.0..1023.0);//.round();
+//        let v = rng.random_range(-1.0..1.0);
+        vertices.push(v);
+        ids.push(format!("c{}",i));
+    }
+ 
+    UmapData {
+        num_point: vertices.len()/2,
+        data: vertices,
+        ids: ids,
+    }
+
+
+
+}
+
+
+
+
+
+
+
 
 
 
@@ -128,6 +186,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(actix_web::middleware::Logger::default())  //for debugging
             .service(get_cluster)
             .service(get_genbank)
+            .service(get_umap)
             .service(Files::new("/", "./dist/").index_file("index.html"))
             .default_service(
                 web::route().to(|| HttpResponse::NotFound()),  //header("Location", "/").finish()

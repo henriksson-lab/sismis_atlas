@@ -20,6 +20,25 @@ pub struct Cluster {
 }
 
 
+////////////////////////////////////////////////////////////
+/// 
+#[derive(Debug, Deserialize, Serialize)]
+pub struct DatabaseColumnMeta {
+    pub name: String,
+    pub levels: Vec<String>, //0...n, different factor levels
+}
+
+
+
+////////////////////////////////////////////////////////////
+/// 
+#[derive(Debug, Deserialize, Serialize)]
+pub struct UmapData {
+    pub num_point: usize,
+    pub data: Vec<f32>,
+    pub ids: Vec<String>,
+}
+
 
 
 ////////////////////////////////////////////////////////////
