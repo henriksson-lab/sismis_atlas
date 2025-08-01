@@ -160,12 +160,9 @@ impl Component for UmapView {
             MsgUMAP::MouseMove(x_cam,y_cam)
         });
 
-
-
         let mouseclicked = ctx.link().callback(move |_e: MouseEvent | { 
             MsgUMAP::MouseClick
         });
-
 
         html! {
             <canvas ref={self.node_ref.clone()} style="border:1px solid #000000;" onmousemove={mousemoved} onclick={mouseclicked}/>
@@ -176,9 +173,6 @@ impl Component for UmapView {
     fn rendered(&mut self, _ctx: &Context<Self>, _first_render: bool) {
 
         if let Some(umap) = &self.umap {
-
-
-
 
             // Only start the render loop if it's the first render
             // There's no loop cancellation taking place, so if multiple renders happen,

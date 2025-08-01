@@ -1,7 +1,7 @@
 
 
 
-use my_web_app::{Cluster, ClusterRequest, Genbank};
+use my_web_app::{Cluster, ClusterRequest, Genbank, SequenceRequest};
 use web_sys::window;
 use yew::prelude::*;
 
@@ -31,11 +31,14 @@ pub enum Msg {
 
     OpenPage(CurrentPage),
 
-    GetCluster(String),
-    SetCluster(Option<Vec<Cluster>>),
+    GetSequence(String),
+    SetMetaTable(Option<Vec<Cluster>>),
 
-    GetGenbank(String),
+    GetGenbank(Vec<String>),
     SetGenbank(Option<Vec<Genbank>>),
+
+    HoverSequence(Option<String>),
+    ClickSequence(Option<String>),
 
 }
 
@@ -47,7 +50,9 @@ pub struct Model {
     pub current_page: CurrentPage,
 
     pub current_genbank: Option<Vec<Genbank>>,
-    pub current_cluster: Option<Vec<Cluster>>,
+    pub current_table_meta: Option<Vec<Cluster>>,
+
+    pub hover_sequence: Option<String>
         
 }
 
@@ -59,15 +64,16 @@ impl Component for Model {
 
     ////////////////////////////////////////////////////////////
     /// Create a new component
-    fn create(ctx: &Context<Self>) -> Self {
+    fn create(_ctx: &Context<Self>) -> Self {
 
-        ctx.link().send_message(Msg::GetCluster("GUT_GENOME277127-scaffold_21_cluster_1".to_string()));
-        ctx.link().send_message(Msg::GetGenbank("GUT_GENOME277127-scaffold_21_cluster_1".to_string()));
+        //ctx.link().send_message(Msg::GetCluster("GUT_GENOME277127-scaffold_21_cluster_1".to_string()));
+        //ctx.link().send_message(Msg::GetGenbank("GUT_GENOME277127-scaffold_21_cluster_1".to_string()));
 
         Self {
             current_page: CurrentPage::Home,
             current_genbank: None,
-            current_cluster: None
+            current_table_meta: None,
+            hover_sequence: None,
         }
     }
 
@@ -84,23 +90,24 @@ impl Component for Model {
                 true
             },
 
-            Msg::SetCluster(data) => {
+            Msg::SetMetaTable(data) => {
                 //log::debug!("got {:?}",data);
-                self.current_cluster = data;
+                self.current_table_meta = data;
+                self.current_genbank = None;
                 true
             },
 
-            Msg::GetCluster(id) => {
+            Msg::GetSequence(id) => {
 
-                let s=ClusterRequest {
-                    cluster_id: id
+                let s=SequenceRequest {
+                    sequence_id: id
                 };
 
                 let json = serde_json::to_string(&s).expect("Failed to generate json");
                 //log::debug!("sending {}", json);
                 async fn get_data(json: String) -> Msg {
                     let client = reqwest::Client::new();
-                    let res: Vec<Cluster> = client.post(format!("{}/get_cluster",get_host_url()))
+                    let res: Vec<Cluster> = client.post(format!("{}/get_sequence",get_host_url()))
                         .header("Content-Type", "application/json")
                         .body(json)
                         .send()
@@ -110,7 +117,7 @@ impl Component for Model {
                         .await
                         .expect("Failed to get table data");
 
-                    Msg::SetCluster(Some(res))
+                    Msg::SetMetaTable(Some(res))
                 }
                 ctx.link().send_future(get_data(json));
                 false
@@ -149,6 +156,26 @@ impl Component for Model {
             },
 
 
+            Msg::HoverSequence(id) => {
+                self.hover_sequence = id;
+                true
+            }
+
+            Msg::ClickSequence(id) => {
+
+                //Load metadata!
+
+                self.hover_sequence = id.clone();
+
+                if let Some(id) = &id {
+                    ctx.link().send_message(Msg::GetSequence(id.clone()));
+                } else {
+                    
+                }
+
+
+                true
+            }
 
         }
     }
@@ -159,16 +186,17 @@ impl Component for Model {
     fn view(&self, ctx: &Context<Self>) -> Html {
 
 
-        let on_cell_hovered: Callback<Option<String>, ()> = Callback::from(move |_name: Option<String>| {
+        let on_cell_hovered= ctx.link().callback(move |name: Option<String>| {
             //format!("Bye {}", name)
-            log::debug!("meah");
+            //log::debug!("meah");
+            Msg::HoverSequence(name)
         });
 
-        let on_cell_clicked: Callback<Option<String>, ()> = Callback::from(move |_name: Option<String>| {
+        let on_cell_clicked= ctx.link().callback(move |name: Option<String>| {
             //format!("Bye {}", name)
-            log::debug!("wheee");
+            //log::debug!("meah");
+            Msg::ClickSequence(name)
         });
-
 
         let current_page = match self.current_page { 
             CurrentPage::Home => self.view_landing_page(&ctx),
@@ -191,6 +219,7 @@ impl Component for Model {
                 { current_page }
 
                 <UmapView on_cell_hovered={on_cell_hovered} on_cell_clicked={on_cell_clicked}/> //// we really do not want to re-render this if needed! how to avoid?
+                { format!("{}", if let Some(c) = &self.hover_sequence {c.clone()} else {"No cell hovered".to_string()} )  }
 
                 { self.view_cluster_table(ctx) }
                 { self.view_genbank_svgs(ctx) }
@@ -215,15 +244,28 @@ impl Model {
 
     ////////////////////////////////////////////////////////////
     /// x
-    pub fn view_cluster_table(&self, _ctx: &Context<Self>) -> Html {
+    pub fn view_cluster_table(&self, ctx: &Context<Self>) -> Html {
 
-        if let Some(list_cluser) = &self.current_cluster {
+        if let Some(list_cluser) = &self.current_table_meta {
 
             let list_rows = list_cluser.iter().map(|c| {
+
+                let cluster_id=c.cluster_id.clone();
+                let on_click_cluster= ctx.link().callback(move |_e: MouseEvent| {
+                    //format!("Bye {}", name)
+                    log::debug!("get genbank");
+                    Msg::GetGenbank(vec![cluster_id.clone()])
+                });
+
+
                 html! {
                     <tr> 
                         <td> { c.sequence_id.clone() } </td>
-                        <td> { c.cluster_id.clone() } </td>
+                        <td>
+                            <a onclick={on_click_cluster}>
+                             { c.cluster_id.clone() }
+                            </a>
+                        </td>
                         <td> { c.start.clone() } </td>
                         <td> { c.end.clone() } </td>
                         <td> { c.average_p.clone() } </td>
@@ -233,9 +275,6 @@ impl Model {
                         <td> { c.domains.clone() } </td>
                         <td> { c.type2.clone() } </td>
                         <td> { c.filepath.clone() } </td>
-
-
-//                        { format!("{:?}", val.clone()) } 
                     </tr>
                 }
             }).collect::<Html>();

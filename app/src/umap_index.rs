@@ -13,44 +13,43 @@ pub struct UmapPointIndex {
 impl UmapPointIndex {
 
     pub fn new() -> UmapPointIndex {
-        let restaurants = RTree::new();
+        let index = RTree::new();
 
         UmapPointIndex {
-            index: restaurants
+            index: index
         }
 
     }
 
     pub fn build_point_index(umap: &UmapData) -> UmapPointIndex {
 
-        let mut restaurants = RTree::new();
+        let mut index = RTree::new();
         for i in 0..umap.num_point {
             let x = umap.data[i*2+0];
             let y: f32 = umap.data[i*2+1];
-            restaurants.insert(UmapPoint::new([x, y], i));
+            index.insert(UmapPoint::new([x, y], i));
         }
 
         UmapPointIndex {
-            index: restaurants
+            index
         }
     }
 
 
     pub fn get_closest_point(&self, x:f32, y:f32, max_dist:f32) -> Option<usize> {
 
-        let my_location = [x, y];
+        let search_pos = [x, y];
 
-        // Now find the closest restaurant!
-        let place = self.index.nearest_neighbor(&my_location);//.unwrap();
+        let p = self.index.nearest_neighbor(&search_pos);
 
-        if let Some(p) = place {
+        if let Some(p) = p {
 
             let v = p.geom();
             let point_x = v[0];
             let point_y = v[1];
 
-            let dx = point_x-x;
-            let dy = point_y-y;
+            let dx = point_x - x;
+            let dy = point_y - y;
             let dist2 = dx*dx + dy*dy;
             //log::debug!("dist {} {}", dist2, p.data);
 

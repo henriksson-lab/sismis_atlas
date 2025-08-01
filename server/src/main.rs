@@ -1,5 +1,7 @@
 pub mod genbank;
 pub mod sqlite;
+pub mod umap;
+pub mod sequence_data;
 
 use std::fs::File;
 use std::path::{PathBuf};
@@ -8,14 +10,16 @@ use std::io::{BufReader};
 use actix_files::Files;
 use actix_web::web::Json;
 use actix_web::{web, web::Data, App, HttpResponse, HttpServer, post, get};
-use my_web_app::{ClusterRequest, Genbank, UmapData};
+use my_web_app::{ClusterRequest, Genbank, SequenceRequest, UmapMetadata};
 use serde::Deserialize;
 use serde::Serialize;
 use std::sync::Mutex;
 
 use crate::genbank::convert_genbank;
-use crate::sqlite::query_cluster;
+use crate::sequence_data::load_sequence_meta;
+use crate::sqlite::get_sequence_sql;
 use crate::genbank::query_genbank;
+use crate::umap::load_umap_data;
 
 use rusqlite::{Connection, OpenFlags};
 
@@ -24,6 +28,7 @@ use rusqlite::{Connection, OpenFlags};
 pub struct ServerData {
     conn: Connection,
     path_zip: PathBuf,
+    umeta: UmapMetadata,
 
 }
 
@@ -37,19 +42,19 @@ pub struct ConfigFile {
 
 
 
-use actix_web::{Responder};  //get, 
+use actix_web::{Responder}; 
 
 
 ////////////////////////////////////////////////////////////
 /// REST entry point
-#[post("/get_cluster")]
-async fn get_cluster(server_data: Data<Mutex<ServerData>>, req_body: web::Json<ClusterRequest>) -> impl Responder {
+#[post("/get_sequence")]
+async fn get_sequence(server_data: Data<Mutex<ServerData>>, req_body: web::Json<SequenceRequest>) -> impl Responder {
 
     println!("{:?}",req_body);
     let Json(req) = req_body;
 
     //info!("metadata: {:?}", &server_data.db_metadata);
-    let ret = query_cluster(&server_data, &req.cluster_id).
+    let ret = get_sequence_sql(&server_data, &req).
         expect("failed to access sql");
         //expect("failed to get cluster");
     serde_json::to_string(&ret)
@@ -64,18 +69,8 @@ async fn get_genbank(server_data: Data<Mutex<ServerData>>, req_body: web::Json<C
 
     println!("{:?}",req_body);
     let Json(req) = req_body;
-
-//    let e ="GUT_GENOME277127-scaffold_21_cluster_1".to_string();
-
-    let ret = query_genbank(&server_data, &req.cluster_id).
-            expect("failed to access genbank");
-//    ret   ///// would be more efficient!!
-
-    let ret = Genbank {
-        data: String::from_utf8_lossy(ret.as_slice()).to_string()
-    };
-
-    let ret = vec![ret];
+    let ret = query_genbank(&server_data, &req).
+            expect("failed to access genbank"); 
 
     serde_json::to_string(&ret)
 }
@@ -92,39 +87,6 @@ async fn get_umap(_server_data: Data<Mutex<ServerData>>) -> impl Responder {
     let ret = load_umap_data();
 
     serde_json::to_string(&ret)
-}
-
-
-
-
-
-
-pub fn load_umap_data() -> UmapData {
-
-
-
-    // This list of vertices
-    let num_points = 10;
-    let mut vertices: Vec<f32> = vec![];
-    let mut ids: Vec<String> = Vec::new();
-
-    use rand::Rng;
-    let mut rng = rand::rng();
-    for i in 0..(num_points*2) {
-        let v = rng.random_range(0.0..1023.0);//.round();
-//        let v = rng.random_range(-1.0..1.0);
-        vertices.push(v);
-        ids.push(format!("c{}",i));
-    }
- 
-    UmapData {
-        num_point: vertices.len()/2,
-        data: vertices,
-        ids: ids,
-    }
-
-
-
 }
 
 
@@ -155,6 +117,10 @@ async fn main() -> std::io::Result<()> {
     let config_file:ConfigFile = serde_json::from_reader(config_reader).expect("Could not open config file");
 
 
+    //UMAP meta
+    let umeta = load_sequence_meta();
+
+
     // Open SQL database
     let path_store = std::path::Path::new(&config_file.data);
     let path_sql = path_store.join(std::path::Path::new("clusters.sqlite"));
@@ -164,19 +130,19 @@ async fn main() -> std::io::Result<()> {
     // Convert data files if needed
     let gbk_in = config_file.data.join("genbank.gbk");
     let gbk_zip = config_file.data.join("genbank.zip");
-    convert_genbank(&gbk_in, &gbk_zip).await.expect("Could not parse genbank");
+    if !gbk_zip.exists() {
+        println!("Converting genbank to zip");
+        convert_genbank(&gbk_in, &gbk_zip).await.expect("Could not parse genbank");
+    }
 
 
 
-
-
-
-
-
+    //Gather server data / state
     let data = Data::new(Mutex::new(
         ServerData {
             conn,
             path_zip: gbk_zip,
+            umeta: umeta,
         }
     ));
 
@@ -184,7 +150,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .app_data(data.clone())
             .wrap(actix_web::middleware::Logger::default())  //for debugging
-            .service(get_cluster)
+            .service(get_sequence)
             .service(get_genbank)
             .service(get_umap)
             .service(Files::new("/", "./dist/").index_file("index.html"))

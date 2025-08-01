@@ -1,4 +1,6 @@
 
+use std::collections::{BTreeMap, HashMap};
+
 use serde::{Deserialize, Serialize};
 
 
@@ -25,8 +27,75 @@ pub struct Cluster {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct DatabaseColumnMeta {
     pub name: String,
-    pub levels: Vec<String>, //0...n, different factor levels
+    pub list_levels: Vec<String>, //0...n, different factor levels
+    pub map_levels: BTreeMap<String, i32>, // need not serialize? TODO
+    pub values: Vec<i32> //enough levels? i16?
 }
+
+// #[serde(skip)]  // if we want to restore map_levels ourselves
+
+
+impl DatabaseColumnMeta {
+
+    ////////////////////////////////////////////////////////////
+    /// Constructor
+    pub fn new(name: &String) -> DatabaseColumnMeta {
+        DatabaseColumnMeta {
+            name: name.clone(),
+            list_levels: Vec::new(),
+            map_levels: BTreeMap::new(),
+            values: Vec::new(),
+        }
+    }
+
+    ////////////////////////////////////////////////////////////
+    /// Convert list of strings into factors; update this object to keep levels
+    pub fn factorize(&mut self, inlist: &Vec<String>) {
+        self.list_levels.clear();
+        self.map_levels.clear();
+
+        let mut outlist = Vec::new();
+        outlist.reserve(inlist.len());
+        for e in inlist {
+            if let Some(i) = self.map_levels.get(e) {
+                outlist.push(*i as i32);
+            } else {
+                let i = self.list_levels.len() as i32;
+                self.map_levels.insert(e.clone(), i);
+                self.list_levels.push(e.clone());
+                outlist.push(i);
+            }
+        }
+        self.values=outlist;
+    }
+}
+
+
+
+////////////////////////////////////////////////////////////
+/// 
+pub struct UmapMetadata {
+    colorings: HashMap<String, DatabaseColumnMeta>
+}
+
+impl UmapMetadata {
+
+    pub fn new() -> UmapMetadata {
+        UmapMetadata {
+            colorings: HashMap::new()
+        }
+    }
+
+
+    pub fn add_and_factorize(&mut self, name: &String, values: &Vec<String>) {
+        let mut col = DatabaseColumnMeta::new(&name);
+        col.factorize(values);
+        self.colorings.insert(name.clone(), col);
+    }
+}
+
+
+
 
 
 
@@ -54,6 +123,19 @@ pub struct Genbank {
 /// 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ClusterRequest {
-    pub cluster_id: String,
+    pub cluster_id: Vec<String>,
 }
+
+
+
+
+////////////////////////////////////////////////////////////
+/// 
+#[derive(Debug, Deserialize, Serialize)]
+pub struct SequenceRequest {
+    pub sequence_id: String,
+}
+
+
+
 

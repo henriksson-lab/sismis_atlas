@@ -12,7 +12,8 @@ use archflow::{
  error::ArchiveError,
  };
 
- use tokio::fs::File;
+ use my_web_app::{ClusterRequest, Genbank};
+use tokio::fs::File;
 
 fn parse_name(line: &String) -> Option<String> {
     let line = &line["LOCUS       ".len()..];
@@ -90,9 +91,9 @@ use crate::ServerData;
 /// 
 pub fn query_genbank(
     server_data: &Data<Mutex<ServerData>>,
-    search_id: &String
+    req: &ClusterRequest
 //) -> Result<String,()> {
-) -> anyhow::Result<Vec<u8>> { //>Result<Vec<u8>,Error>
+) -> anyhow::Result<Vec<Genbank>> { //>Result<Vec<u8>,Error>
 
 
     let server_data =server_data.lock().unwrap();
@@ -101,18 +102,29 @@ pub fn query_genbank(
 
     //GUT_GENOME277127-scaffold_21_cluster_1
 
+//    let e ="GUT_GENOME277127-scaffold_21_cluster_1".to_string();
 
-    let mut zfile = archive.by_name(search_id);
 
+    //Gather all files
+    let mut list_out = Vec::new();
+    for search_id in &req.cluster_id {
 
-    let mut out = Vec::new();
-    if let Ok(zfile) = &mut zfile {
-        //let mut reader = BufReader::new(zfile);
-        let _cnt = zfile.read_to_end(&mut out)?;
-    }   
-    Ok(out)
-    
+        let mut zfile = archive.by_name(search_id);
+        let mut out = Vec::new();
+        if let Ok(zfile) = &mut zfile {
+            //let mut reader = BufReader::new(zfile);
+            let _cnt = zfile.read_to_end(&mut out)?;
 
+            let ret = Genbank {
+                data: String::from_utf8_lossy(out.as_slice()).to_string()
+            };
+            list_out.push(ret);
+        } else {
+            println!("Failed to get one genbank file");
+        }
+    }
+
+    Ok(list_out)
 //    Ok("booo".to_string())
 }
         
