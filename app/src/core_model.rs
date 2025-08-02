@@ -1,4 +1,4 @@
-use my_web_app::{Cluster, ClusterRequest, Genbank, SequenceRequest, UmapMetadata};
+use my_web_app::{Cluster, ClusterRequest, Genbank, SequenceRequest};
 use web_sys::window;
 use yew::prelude::*;
 
@@ -36,7 +36,6 @@ pub enum Msg {
 
     HoverSequence(Option<String>),
     ClickSequence(Option<String>),
-
 }
 
 
@@ -49,9 +48,7 @@ pub struct Model {
     pub current_genbank: Option<Vec<Genbank>>,
     pub current_table_meta: Option<Vec<Cluster>>,
 
-    pub hover_sequence: Option<String>,
-
-        
+    pub hover_sequence: Option<String>,        
 }
 
 impl Component for Model {

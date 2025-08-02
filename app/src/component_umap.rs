@@ -168,7 +168,7 @@ impl Component for UmapView {
             },
 
             MsgUMAP::SetColoring(coloring) => {
-                log::debug!("{:?}",coloring);
+                //log::debug!("{:?}",coloring);
                 self.coloring = coloring;                
                 self.current_coloring = self.coloring.colorings.keys().next().expect("No colors available").clone();
                 true
@@ -234,15 +234,22 @@ impl Component for UmapView {
         //List colors for this factor
         let mut list_levels = Vec::new();
         if let Some(coloring) = self.coloring.colorings.get(&self.current_coloring) {
-            let mul= 255/coloring.list_levels.len();
+            let num_factor_f = coloring.list_levels.len() as f32;
             for (i,lev) in coloring.list_levels.iter().enumerate() {
-                let hue=i*mul;
+                let hue = (i as f32)/num_factor_f;
+                let hsv = (hue, 1.0, 1.0);
+                let rgb = hsv2rgb(hsv);
+                let scolor = format!("background-color:{}; min-width:50px;",rgbvec2string(rgb));
+
                 list_levels.push(html! {
-                    <li>
-                        <span style={format!("color:hsl({}, 100%, 50%)",hue)}> //////////// equation disagrees; convert HSV properly
-                            { "**** " }                       
-                        </span> { lev.clone() }
-                    </li>
+                    <tr>
+                        <td style={scolor}>
+                            { " " }                       
+                        </td> 
+                        <td>
+                            { lev.clone() }
+                        </td>
+                    </tr>
                 });
             }
 
@@ -250,17 +257,19 @@ impl Component for UmapView {
 
 
         html! {
-            <div>
+            <div style="display: flex;">
+                <div>
+                    <canvas ref={self.node_ref.clone()} style="border:1px solid #000000;" onmousemove={mousemoved} onclick={mouseclicked}/>
+                </div>
                 <div>
                     {"Color by:"}
                     <select onchange={select_factor}>
                         { list_factors }
                     </select>                    
+                    <table>
+                        { list_levels }
+                    </table>
                 </div>
-                <canvas ref={self.node_ref.clone()} style="border:1px solid #000000;" onmousemove={mousemoved} onclick={mouseclicked}/>
-                <ul>
-                    { list_levels }
-                </ul>
             </div>
         }
     }
@@ -389,3 +398,50 @@ impl Component for UmapView {
     }
 }
 
+
+
+
+type Vec3 = (f32,f32,f32);
+type Vec4 = (f32,f32,f32,f32);
+
+////////////////////////////////////////////////////////////
+/// Convert RGB to HSV, 0-1 range, made to match GLSL version
+pub fn hsv2rgb(c: Vec3) -> Vec3 {
+
+    //fract(x) = x - floor(x)
+
+    //mix(x,y,a)
+    //x×(1−a)+y×a
+    fn mix(x:f32,y:f32,a:f32) -> f32 {
+        x*(1.0-a) + y*a
+    }
+
+    //clamp(x, min,max)
+    //min(max(x, minVal), maxVal)
+    fn clamp(x:f32, minval:f32, maxval:f32) -> f32 {
+        (x.max(minval)).min(maxval)        
+    }
+
+    //vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+    let k: Vec4 = (1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+
+    //vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+    let p0 = ((c.0 + k.0).fract()*6.0 - k.3).abs();
+    let p1 = ((c.0 + k.1).fract()*6.0 - k.3).abs();
+    let p2 = ((c.0 + k.2).fract()*6.0 - k.3).abs();
+
+    //return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+    let out0 = c.2 * mix(k.0, clamp( p0 - k.0, 0.0, 1.0), c.1);
+    let out1 = c.2 * mix(k.0, clamp( p1 - k.0, 0.0, 1.0), c.1);
+    let out2 = c.2 * mix(k.0, clamp( p2 - k.0, 0.0, 1.0), c.1);
+    (out0, out1, out2)
+}
+
+
+
+pub fn rgbvec2string(c: Vec3) -> String {
+    let red=(c.0*255.0) as u8;
+    let green=(c.1*255.0) as u8;
+    let blue=(c.2*255.0) as u8;
+    format!("#{:02X}{:02X}{:02X}", red, green, blue)
+}
