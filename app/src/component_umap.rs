@@ -405,7 +405,7 @@ type Vec3 = (f32,f32,f32);
 type Vec4 = (f32,f32,f32,f32);
 
 ////////////////////////////////////////////////////////////
-/// Convert RGB to HSV, 0-1 range, made to match GLSL version
+/// Convert RGB to HSV, 0-1 range, made to match GLSL version exactly
 pub fn hsv2rgb(c: Vec3) -> Vec3 {
 
     //fract(x) = x - floor(x)

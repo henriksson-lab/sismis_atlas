@@ -5,7 +5,7 @@ use crate::core_model::*;
 
 use my_web_app::Genbank;
 use yew::prelude::*;
-use gb_io::reader::SeqReader;
+use gb_io::{reader::SeqReader, seq::{Feature, Seq}};
 
 
 //see https://github.com/gamcil/clinker
@@ -72,34 +72,88 @@ impl Model {
 
             //log::debug!("got gb {:?}",seq);
 
+            let view = GenbankView::from(&seq);
+
             let mut list_features = Vec::new();
 
-            let mut cur_y = 10;
-            for f in &seq.features {
+            let lane_height = 12.0;
+            let arrow_height = 10.0 as f32;
 
-                let q = format!("{:?}", f.qualifiers);
-                
+            for (lane_i, curlane) in view.lanes.iter().enumerate() {
 
-                if let Ok(bounds) = f.location.find_bounds() {
-                    let h= html! { 
-                        <line x1={format!("{}",bounds.0)} x2={format!("{}",bounds.1)} y1={format!("{}",cur_y)} y2={format!("{}",cur_y)} stroke="red"/>
-                    };
-                    list_features.push(h);
-                    cur_y += 10;
+                let cur_y = 2.0 + lane_i as f32 * lane_height ;
+                for f in &curlane.features {
 
-                    let h= html! { 
-                        <text x={format!("{}",bounds.0)}  y={format!("{}",cur_y)} fill="red" font-size="3">
-                            { q }
-                        </text>
-                    };
-                    list_features.push(h);
-                    cur_y += 10;
+                    if let Ok(bounds) = f.location.find_bounds() {
+
+                        let is_box = f.kind != "CDS";
+
+                        let x1 = (bounds.0 as f32) * view.scale_x;
+                        let x2 = (bounds.1 as f32) * view.scale_x;
+                        let xmid = if is_box {
+                            x2
+                        } else {
+                            (x2-5.0).max(x1)
+                        };
+
+
+                        let y1 = cur_y;
+                        let y2 = cur_y + arrow_height;
+                        let ymid = (y1+y2)/2.0;
+
+
+                        let h= html! { 
+                            <polygon points={format!("{},{} {},{} {},{} {},{} {},{}",
+                                x1,y1,
+                                xmid,y1,
+                                x2,ymid,
+                                xmid,y2,
+                                x1,y2,                        
+                            )} stroke="black" fill="gray"/>
+                        };
+                        list_features.push(h);
+
+
+                        let xtext = x1+2.0;
+                        let ytext = y2-2.0;
+
+                        //let q = format!("{:?}", f.qualifiers);
+
+                        //let is_cds = f.kind == "CDS";
+
+
+                        let mut show_text = String::new();
+                        for q in &f.qualifiers {
+                            if let Some(val) = &q.1 {
+                                if q.0 == "locus_tag" {
+                                    show_text.push_str(val.as_str());
+                                    show_text.push_str("; ");
+                                }
+                                if q.0 == "function" {
+                                    show_text.push_str(val.as_str());
+                                    show_text.push_str("; ");
+                                }
+                                if q.0 == "standard_name" {
+                                    show_text.push_str(val.as_str());
+                                    show_text.push_str("; ");
+                                }
+                            }
+                        }
+
+                        let h= html! { 
+                            <text x={xtext.to_string()}  y={ytext.to_string()} fill="white" font-size="8">
+                                { show_text }
+                            </text>
+                        };
+                        list_features.push(h);
+                    }
                 }
+
             }
 
+
             html! { 
-                <svg viewBox={format!("0 0 {} {}", seq.len(), cur_y+10)}>
-                    <line x1=0 x2={format!("{}",seq.len())} y1=1 y2=1 stroke="black"/>
+                <svg viewBox={format!("0 0 1000 {}", 10.0 + view.lanes.len() as f32 * lane_height)}>
                     { list_features }
                 </svg>
             }
@@ -113,4 +167,63 @@ impl Model {
     }
     
 
+}
+
+
+pub struct GenbankView {
+    lanes: Vec<FeatureLane>,
+    scale_x: f32
+}
+impl GenbankView {
+
+    pub fn from(seq: &Seq) -> GenbankView {
+
+        let mut lanes: Vec<FeatureLane> = Vec::new();
+        let scale_x = 1000.0 / (seq.len() as f32);
+
+        //Figure out what features to show
+        for f in &seq.features {
+            if let Ok(bounds) = f.location.find_bounds() {
+
+                //Figure out which lane this would fit
+                let mut cur_lane_i = 0;
+                loop {
+                    //Create new lanes as needed
+                    if cur_lane_i == lanes.len() {
+                        lanes.push(FeatureLane::new());
+                    }
+                    let cur_lane = lanes.get_mut(cur_lane_i).unwrap();
+
+                    //See if the feature fits. If so, add feature
+                    if cur_lane.max_x < bounds.0 {
+                        cur_lane.features.push(f.clone());
+                        cur_lane.max_x = bounds.1;
+                        break;
+                    } else {
+                        cur_lane_i += 1;
+                        log::debug!("eeep {} {} {}",cur_lane_i, bounds.0, bounds.1);
+                    }
+                }
+            }
+        }
+
+        GenbankView {
+            lanes: lanes,
+            scale_x: scale_x,
+        }
+    }
+
+}
+
+struct FeatureLane {
+    features: Vec<Feature>,
+    max_x: i64
+}
+impl FeatureLane {
+    pub fn new() -> FeatureLane {
+        FeatureLane { 
+            features: Vec::new(), 
+            max_x: -100000,
+        }
+    }
 }

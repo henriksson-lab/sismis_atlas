@@ -59,10 +59,10 @@ impl Component for Model {
 
     ////////////////////////////////////////////////////////////
     /// Create a new component
-    fn create(_ctx: &Context<Self>) -> Self {
+    fn create(ctx: &Context<Self>) -> Self {
 
         //ctx.link().send_message(Msg::GetCluster("GUT_GENOME277127-scaffold_21_cluster_1".to_string()));
-        //ctx.link().send_message(Msg::GetGenbank("GUT_GENOME277127-scaffold_21_cluster_1".to_string()));
+        ctx.link().send_message(Msg::GetGenbank(vec!["GUT_GENOME277127-scaffold_21_cluster_1".to_string()]));
 
 
         Self {
