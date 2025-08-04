@@ -29,14 +29,13 @@ pub enum Msg {
 
     OpenPage(CurrentPage),
 
-    GetSequence(String),
+    GetSequence(Vec<String>),
     SetMetaTable(Option<Vec<Cluster>>),
 
     GetGenbank(Vec<String>),
     SetGenbank(Option<Vec<Genbank>>),
 
-    HoverSequence(Option<String>),
-    ClickSequence(Option<String>),
+    ClickSequence(Vec<String>),
 }
 
 
@@ -48,8 +47,6 @@ pub struct Model {
 
     pub current_genbank: Option<Vec<Genbank>>,
     pub current_table_meta: Option<Vec<Cluster>>,
-
-    pub hover_sequence: Option<String>,        
 }
 
 impl Component for Model {
@@ -70,7 +67,6 @@ impl Component for Model {
             current_page: CurrentPage::Atlas,
             current_genbank: None,
             current_table_meta: None,
-            hover_sequence: None,
         }
     }
 
@@ -152,24 +148,10 @@ impl Component for Model {
                 false
             },
 
-
-            Msg::HoverSequence(id) => {
-                self.hover_sequence = id;
-                true
-            }
-
             Msg::ClickSequence(id) => {
 
                 //Load metadata!
-
-                self.hover_sequence = id.clone();
-
-                if let Some(id) = &id {
-                    ctx.link().send_message(Msg::GetSequence(id.clone()));
-                } else {
-                    
-                }
-
+                ctx.link().send_message(Msg::GetSequence(id.clone()));
 
                 true
             },

@@ -134,7 +134,7 @@ pub struct ClusterRequest {
 /// 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct SequenceRequest {
-    pub sequence_id: String,
+    pub sequence_id: Vec<String>,
 }
 
 

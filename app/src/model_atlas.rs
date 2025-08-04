@@ -25,11 +25,10 @@ impl Model {
     /// x
     pub fn view_atlas_page(&self, ctx: &Context<Self>) -> Html {
 
-        let on_cell_hovered= ctx.link().callback(move |name: Option<String>| {
-            Msg::HoverSequence(name)
+        let on_cell_hovered = Callback::from(move |_name: Option<String>| {
         });
 
-        let on_cell_clicked= ctx.link().callback(move |name: Option<String>| {
+        let on_cell_clicked= ctx.link().callback(move |name: Vec<String>| {
             Msg::ClickSequence(name)
         });
 

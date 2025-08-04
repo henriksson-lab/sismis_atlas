@@ -25,35 +25,38 @@ pub fn get_sequence_sql(
         
     let mut stmt = server_data.conn.prepare("SELECT * from clusters where sequence_id LIKE ?1")?;
      
-    let rows = stmt.query_map([req.sequence_id.clone()], |row| {
-        let out = Cluster {
-            sequence_id: row.get(0)?,
-            cluster_id: row.get(1)?,
-            start: row.get(2)?,
-            end: row.get(3)?,
-            average_p: row.get(4)?,
-            max_p: row.get(5)?,
-            proteins: row.get(6)?,
-            domains: row.get(7)?,
-            type2: row.get(8)?,
-            filepath: row.get(9)?,
-        };
-        Ok(out)
-    })?;
 
     let mut all_rows = Vec::new();
-    for row in rows {
-        match row {
-            Ok(row) => {
-                all_rows.push(row);
-            },
-            Err(e) => {
-                eprintln!("Error: {e:?}")
+    for sequence_id in &req.sequence_id {
+
+        let rows = stmt.query_map([sequence_id], |row| {
+            let out = Cluster {
+                sequence_id: row.get(0)?,
+                cluster_id: row.get(1)?,
+                start: row.get(2)?,
+                end: row.get(3)?,
+                average_p: row.get(4)?,
+                max_p: row.get(5)?,
+                proteins: row.get(6)?,
+                domains: row.get(7)?,
+                type2: row.get(8)?,
+                filepath: row.get(9)?,
+            };
+            Ok(out)
+        })?;
+
+        for row in rows {
+            match row {
+                Ok(row) => {
+                    all_rows.push(row);
+                },
+                Err(e) => {
+                    eprintln!("Error: {e:?}")
+                }
             }
-        }
+        }        
     }
     return Ok(all_rows);
-//    Ok(None)
 }
         
 

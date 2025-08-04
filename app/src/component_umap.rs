@@ -117,7 +117,7 @@ pub enum MsgUMAP {
 #[derive(Properties, PartialEq)]
 pub struct Props {
     pub on_cell_hovered: Callback<Option<String>>,
-    pub on_cell_clicked: Callback<Option<String>>,
+    pub on_cell_clicked: Callback<Vec<String>>,
 }
 
 
@@ -213,6 +213,7 @@ impl Component for UmapView {
 
 
             MsgUMAP::MouseMove(x,y, press_left) => {
+                let mut do_update = false;
                 let last_pos = self.last_pos;
                 self.last_pos = (x,y);
 //                log::debug!(".. {:?}", last_pos);
@@ -237,6 +238,7 @@ impl Component for UmapView {
                 self.last_cell = point_name.clone();
                 if point_changed {
                     ctx.props().on_cell_hovered.emit(point_name);
+                    do_update=true;
                 }
 
                 if let Some(sel) = &mut self.current_selection {
@@ -257,10 +259,9 @@ impl Component for UmapView {
 
                 //Always update view if a selection is going on
                 if let Some(_sel) = &self.current_selection {
-                    true
-                } else {
-                    false
+                    do_update=true;
                 }
+                do_update
             },
 
 
@@ -275,11 +276,6 @@ impl Component for UmapView {
 
 
             MsgUMAP::MouseClick => {
-
-                if self.current_tool==CurrentTool::Select {
-                    ctx.props().on_cell_clicked.emit(self.last_cell.clone());
-                }
-
                 false
             },
 
@@ -329,21 +325,25 @@ impl Component for UmapView {
 
 
             MsgUMAP::MouseStartSelect(cx,cy) => {
-                let (wx,wy) = self.camera.cam2world(cx as f32, cy as f32);
-                self.current_selection = Some(Rectangle2D {
-                    x1: wx,
-                    x2: wx,
-                    y1: wy,
-                    y2: wy
-                });
-                //log::debug!("sel-start {:?}",self.current_selection);
-                true
+                if self.current_tool==CurrentTool::Select {
+                    let (wx,wy) = self.camera.cam2world(cx as f32, cy as f32);
+                    self.current_selection = Some(Rectangle2D {
+                        x1: wx,
+                        x2: wx,
+                        y1: wy,
+                        y2: wy
+                    });
+                    //log::debug!("sel-start {:?}",self.current_selection);
+                    true
+                } else {
+                    false
+                }
             }
 
 
             MsgUMAP::MouseEndSelect(cx,cy) => {
-                let (wx,wy) = self.camera.cam2world(cx as f32, cy as f32);
                 if let Some(rect) = &mut self.current_selection {
+                    let (wx,wy) = self.camera.cam2world(cx as f32, cy as f32);
                     rect.x2=wx;
                     rect.y2=wy;
 
@@ -352,33 +352,42 @@ impl Component for UmapView {
                         let (x1,x2) =rect.range_x();
                         let (y1,y2) =rect.range_y();
 
-                        log::debug!("wrect {} -- {}     {} -- {}", x1,x2,    y1,y2);
+                        if x1==x2 && y1==y2 {
+                            log::debug!("this is a click");
 
-                        //TODO see if range is big enough! prevent click?
-
-                        //Scan all points to see if they are within the selection 
-                        let mut selected_vert = Vec::new();
-                        let num_points = umap.num_point;
-                        let vertices = &umap.data;    
-                        for i in 0..num_points {
-                            let px = *vertices.get(i*2+0).unwrap();
-                            let py = *vertices.get(i*2+1).unwrap();
-                            log::debug!("{} {}", px, py);
-                            if px>x1 && px<x2 && py>y1 && py<y2 { /////////////////////// TODO - invert y axis??   ////////////////// points halfway down are at y=500
-                                let point_name = umap.ids.get(i).unwrap().clone();
-//                                selected_vert.push(i);
-                                selected_vert.push(point_name);
+                            if self.current_tool==CurrentTool::Select {
+                                if let Some(cell) = &self.last_cell {
+                                    ctx.props().on_cell_clicked.emit(vec![cell.clone()]);
+                                }
                             }
+
+                        } else {
+                            log::debug!("this is a rect select");
+
+                            //log::debug!("wrect {} -- {}     {} -- {}", x1,x2,    y1,y2);
+
+                            //Scan all points to see if they are within the selection 
+                            let mut selected_vert = Vec::new();
+                            let num_points = umap.num_point;
+                            let vertices = &umap.data;    
+                            for i in 0..num_points {
+                                let px = *vertices.get(i*2+0).unwrap();
+                                let py = *vertices.get(i*2+1).unwrap();
+                                //log::debug!("{} {}", px, py);
+                                if px>x1 && px<x2 && py>y1 && py<y2 { /////////////////////// TODO - invert y axis??   ////////////////// points halfway down are at y=500
+                                    let point_name = umap.ids.get(i).unwrap().clone();
+    //                                selected_vert.push(i);
+                                    selected_vert.push(point_name);
+                                }
+                            }
+                            //log::debug!("sel-end {:?}",rect);
+                            log::debug!("sel-en!! {:?}",selected_vert);
+
+                            ctx.props().on_cell_clicked.emit(selected_vert);                            
                         }
-//                        ctx.props().on_cell_clicked.emit(self.last_cell.clone());  
-
-
-                    //log::debug!("sel-end {:?}",rect);
-                    log::debug!("sel-en!! {:?}",selected_vert);
-
                     }
+                    self.current_selection=None;
                 }
-                self.current_selection=None;
                 true
             }
 
