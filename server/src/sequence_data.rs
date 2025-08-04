@@ -8,6 +8,8 @@ use my_web_app::UmapMetadata;
 use serde::{Deserialize, Serialize};
 use std::{fs::File, io::BufReader, path::Path};
 
+use crate::ConfigFile;
+
 
 
 
@@ -24,11 +26,10 @@ pub struct CsvSeqMeta {
 
 ////////////////////////////////////////////////////////////
 /// NOTE!!! assumed same order as in umap
-pub fn load_sequence_meta() -> UmapMetadata {
+pub fn load_sequence_meta(config_file: &ConfigFile) -> UmapMetadata {
 
-
-    let path_meta = Path::new("testdata/sequence_meta.tsv");
-    let f_meta = File::open(path_meta).expect("Could not open btyperdb_include");
+    let path_meta = config_file.data.join(Path::new("sequence_meta.tsv"));
+    let f_meta = File::open(path_meta).expect("Could not open sequence_meta.tsv");
     let reader = BufReader::new(f_meta);
 
 

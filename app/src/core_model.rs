@@ -63,11 +63,11 @@ impl Component for Model {
     fn create(ctx: &Context<Self>) -> Self {
 
         //ctx.link().send_message(Msg::GetCluster("GUT_GENOME277127-scaffold_21_cluster_1".to_string()));
-        ctx.link().send_message(Msg::GetGenbank(vec!["GUT_GENOME277127-scaffold_21_cluster_1".to_string()]));
+        //ctx.link().send_message(Msg::GetGenbank(vec!["GUT_GENOME277127-scaffold_21_cluster_1".to_string()]));
 
 
         Self {
-            current_page: CurrentPage::Home,
+            current_page: CurrentPage::Atlas,
             current_genbank: None,
             current_table_meta: None,
             hover_sequence: None,
@@ -197,7 +197,7 @@ impl Component for Model {
                 <div id="topmenu" class="topnav">
                     <div class="topnav-right">
                         <a class={active_if(self.current_page==CurrentPage::Home)}       onclick={ctx.link().callback(|_| Msg::OpenPage(CurrentPage::Home))}>{"Home"}</a> 
-                        <a class={active_if(self.current_page==CurrentPage::Atlas)}       onclick={ctx.link().callback(|_| Msg::OpenPage(CurrentPage::Atlas))}>{"Atlas"}</a> 
+                        <a class={active_if(self.current_page==CurrentPage::Atlas)}      onclick={ctx.link().callback(|_| Msg::OpenPage(CurrentPage::Atlas))}>{"Atlas"}</a> 
                         <a class={active_if(self.current_page==CurrentPage::About)}      onclick={ctx.link().callback(|_| Msg::OpenPage(CurrentPage::About))}>{"About"}</a> 
                     </div>
                 </div>

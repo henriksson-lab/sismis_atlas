@@ -43,9 +43,6 @@ impl Model {
                 </div>
 
                 <UmapView on_cell_hovered={on_cell_hovered} on_cell_clicked={on_cell_clicked}/> //// we really do not want to re-render this if needed! how to avoid?
-                <p>
-                    { format!("{}", if let Some(c) = &self.hover_sequence {c.clone()} else {"".to_string()} )  }
-                </p>
 
                 <div class="App-divider">
                     {"Selected exotoxin(s): metadata"}

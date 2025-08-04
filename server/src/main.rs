@@ -119,8 +119,8 @@ async fn get_umap(_server_data: Data<Mutex<ServerData>>) -> impl Responder {
 /// Backend entry point
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    std::env::set_var("RUST_LOG", "info");
-    std::env::set_var("RUST_BACKTRACE", "1");
+    //std::env::set_var("RUST_LOG", "info");
+    //std::env::set_var("RUST_BACKTRACE", "1");
     env_logger::init();
 
     // Read the config file
@@ -130,7 +130,7 @@ async fn main() -> std::io::Result<()> {
 
 
     //UMAP meta
-    let umeta = load_sequence_meta();
+    let umeta = load_sequence_meta(&config_file);
 
 
     // Open SQL database
