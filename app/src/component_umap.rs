@@ -262,7 +262,9 @@ impl Component for UmapView {
                     <canvas ref={self.node_ref.clone()} style="border:1px solid #000000;" onmousemove={mousemoved} onclick={mouseclicked}/>
                 </div>
                 <div>
-                    {"Color by:"}
+                    <p style="font-family: 'Roboto', sans-serif; color: black">
+                        {"Color by: "}
+                    </p>
                     <select onchange={select_factor}>
                         { list_factors }
                     </select>                    
