@@ -11,13 +11,14 @@ impl Model {
         html! {
             <div>
                 <div class="App-divider">
-                    {"About xxx"}
+                    {"About FLExo"}
                 </div>
                 <div class="landingdiv">
                     <h1>
-                        {"What is xxx?"}
+                        {"Hello, world!"}
                     </h1>
                     <p>
+                        {"(It's me)"}
                     </p>
                 </div>
                 <br />
