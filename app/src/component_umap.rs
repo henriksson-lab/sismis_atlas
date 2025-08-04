@@ -366,18 +366,6 @@ impl Component for UmapView {
                 <div style="position: absolute; left:0; top:0; display: flex; ">  // width: 80%
                     <canvas ref={self.node_ref.clone()} style="border:1px solid #000000;" onmousemove={mousemoved} onclick={mouseclicked} onwheel={mousewheel} width="800" height="600"/>
                 </div>
-<<<<<<< HEAD
-                <div>
-                    <p style="font-family: 'Roboto', sans-serif; color: black">
-                        {"Color by: "}
-                    </p>
-                    <select onchange={select_factor}>
-                        { list_factors }
-                    </select>                    
-                    <table>
-                        { list_levels }
-                    </table>
-=======
 
                 <div style="position: absolute; left:0; top:0; display: flex; ">  // width: 80%
                     <svg>
@@ -406,7 +394,9 @@ impl Component for UmapView {
 
                 <div style="position: absolute; left:820px; top:0; width: 30%;"> //display: flex; 
                     <div>
-                        {"Color by:"}
+                        <p style="font-family: 'Roboto', sans-serif; color: black">
+                            {"Color by: "}
+                        </p>
                         <select onchange={select_factor}>
                             { list_factors }
                         </select>                    
@@ -416,7 +406,6 @@ impl Component for UmapView {
                             { list_levels }
                         </table>
                     </div>
->>>>>>> 2832515e39f37a1a71fa44bdf99670472f6a537e
                 </div>
             </div>
         }
