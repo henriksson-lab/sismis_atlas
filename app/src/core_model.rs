@@ -187,6 +187,7 @@ impl Component for Model {
 
         let current_page = match self.current_page { 
             CurrentPage::Home => self.view_landing_page(&ctx),
+            CurrentPage::Atlas => self.view_atlas_page(&ctx),
             CurrentPage::About => self.view_about_pane(&ctx),
         };
 
@@ -196,6 +197,7 @@ impl Component for Model {
                 <div id="topmenu" class="topnav">
                     <div class="topnav-right">
                         <a class={active_if(self.current_page==CurrentPage::Home)}       onclick={ctx.link().callback(|_| Msg::OpenPage(CurrentPage::Home))}>{"Home"}</a> 
+                        <a class={active_if(self.current_page==CurrentPage::Atlas)}       onclick={ctx.link().callback(|_| Msg::OpenPage(CurrentPage::Atlas))}>{"Atlas"}</a> 
                         <a class={active_if(self.current_page==CurrentPage::About)}      onclick={ctx.link().callback(|_| Msg::OpenPage(CurrentPage::About))}>{"About"}</a> 
                     </div>
                 </div>
@@ -203,7 +205,7 @@ impl Component for Model {
         };
 
         html! {
-            <div>
+            <div class="App-body">
                 { html_top_buttons }
                 { current_page }
             </div>
