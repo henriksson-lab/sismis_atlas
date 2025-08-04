@@ -29,6 +29,7 @@ pub struct UmapView {
 #[derive(Debug, PartialEq)]
 pub enum CurrentTool {
     Zoom,
+    ZoomAll,
     Select
 }
 
@@ -248,7 +249,11 @@ impl Component for UmapView {
 
 
             MsgUMAP::SelectCurrentTool(t) => {
-                self.current_tool=t;
+                if t==CurrentTool::ZoomAll {
+                    self.camera = Camera2D::new();
+                } else {
+                    self.current_tool=t;
+                }
                 true
             },
 
@@ -344,6 +349,10 @@ impl Component for UmapView {
             MsgUMAP::SelectCurrentTool(CurrentTool::Zoom)
         });
 
+        let click_zoomall = ctx.link().callback(move |_e: MouseEvent | { 
+            MsgUMAP::SelectCurrentTool(CurrentTool::ZoomAll)
+        });
+
     
         fn tool_style(pos: usize, selected: bool) -> String {
             let c=if selected {"#0099FF"} else {"lightgray"};
@@ -367,14 +376,21 @@ impl Component for UmapView {
                 </div>
 
                 // select
-                <div style={tool_style(730, self.current_tool==CurrentTool::Select)} onclick={click_select}>
+                <div style={tool_style(760, self.current_tool==CurrentTool::Select)} onclick={click_select}>
                     <svg data-icon="polygon-filter" height="16" role="img" viewBox="0 0 16 16" width="16"><path d="M14 5c-.24 0-.47.05-.68.13L9.97 2.34c.01-.11.03-.22.03-.34 0-1.1-.9-2-2-2S6 .9 6 2c0 .04.01.08.01.12L2.88 4.21C2.61 4.08 2.32 4 2 4 .9 4 0 4.9 0 6c0 .74.4 1.38 1 1.72v4.55c-.6.35-1 .99-1 1.73 0 1.1.9 2 2 2 .74 0 1.38-.4 1.72-1h4.55c.35.6.98 1 1.72 1 1.1 0 2-.9 2-2 0-.37-.11-.7-.28-1L14 9c1.11-.01 2-.9 2-2s-.9-2-2-2zm-4.01 7c-.73 0-1.37.41-1.71 1H3.73c-.18-.3-.43-.55-.73-.72V7.72c.6-.34 1-.98 1-1.72 0-.04-.01-.08-.01-.12l3.13-2.09c.27.13.56.21.88.21.24 0 .47-.05.68-.13l3.35 2.79c-.01.11-.03.22-.03.34 0 .37.11.7.28 1l-2.29 4z" fill-rule="evenodd"></path></svg>
                 </div>
 
                 // zoom
-                <div style={tool_style(760, self.current_tool==CurrentTool::Zoom)} onclick={click_zoom}>
+                <div style={tool_style(730, self.current_tool==CurrentTool::Zoom)} onclick={click_zoom}>
                     <svg data-icon="zoom-in" height="16" role="img" viewBox="0 0 16 16" width="16"><path d="M7.99 5.99v-2c0-.55-.45-1-1-1s-1 .45-1 1v2h-2c-.55 0-1 .45-1 1s.45 1 1 1h2v2c0 .55.45 1 1 1s1-.45 1-1v-2h2c.55 0 1-.45 1-1s-.45-1-1-1h-2zm7.56 7.44l-2.67-2.68a6.94 6.94 0 001.11-3.76c0-3.87-3.13-7-7-7s-7 3.13-7 7 3.13 7 7 7c1.39 0 2.68-.42 3.76-1.11l2.68 2.67a1.498 1.498 0 102.12-2.12zm-8.56-1.44c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z" fill-rule="evenodd"></path></svg>
                 </div>
+
+                // zoom all
+                <div style={tool_style(700, self.current_tool==CurrentTool::ZoomAll)} onclick={click_zoomall}>
+                    <svg data-icon="zoom-in" height="16" width="16" xmlns="http://www.w3.org/2000/svg"><path style="fill:none;stroke:#000;stroke-width:2.01074px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" d="M14.733 8.764v5.973H9.586m-8.29-5.973v5.973h5.146m8.29-7.5V1.264H9.587m-8.29 5.973V1.264h5.146"/></svg>
+                </div>
+                
+
 
                 <div style="position: absolute; left:820px; top:0; width: 30%;"> //display: flex; 
                     <div>
