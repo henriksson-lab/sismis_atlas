@@ -29,29 +29,31 @@ pub enum CurrentTool {
 pub struct Camera2D {
     x: f32,
     y: f32,
-    zoom: f32
+    zoom_x: f32,
+    zoom_y: f32,
 }
 impl Camera2D {
     pub fn new() -> Camera2D {
         Camera2D {
             x: 0.0,
             y: 0.0,
-            zoom: 1.0
+            zoom_x: 1.0,
+            zoom_y: 1.0,
         }
     }
 
     pub fn cam2world(&self, cx: f32, cy:f32) -> (f32,f32) {
         (
-            cx/self.zoom + self.x,  
-            cy/self.zoom + self.y
+            cx/self.zoom_x + self.x,  
+            cy/self.zoom_y + self.y
         )
     }
 
 
     pub fn world2cam(&self, wx: f32, wy:f32) -> (f32,f32) {
         (
-            (wx-self.x)*self.zoom,
-            (wy-self.y)*self.zoom
+            (wx-self.x)*self.zoom_x,
+            (wy-self.y)*self.zoom_y
         )
     }
 }
@@ -252,8 +254,8 @@ impl Component for UmapView {
                     let dx = x - last_pos.0;
                     let dy = y - last_pos.1;
                     //log::debug!("dd {:?}", (dx,dy));
-                    self.camera.x -= (dx as f32) / self.camera.zoom;
-                    self.camera.y -= (dy as f32) / self.camera.zoom;
+                    self.camera.x -= (dx as f32) / self.camera.zoom_x;
+                    self.camera.y -= (dy as f32) / self.camera.zoom_y;
                     return true;
                 }
 
@@ -268,8 +270,9 @@ impl Component for UmapView {
             MsgUMAP::MouseWheel(dy) => {
                 //TODO zoom around current position
                 //self.last_pos
-
-                self.camera.zoom *= (10.0f32).powf(dy / 100.0);
+                let scale = (10.0f32).powf(dy / 100.0);
+                self.camera.zoom_x *= scale;
+                self.camera.zoom_y *= scale;
                 true
             },
 
@@ -597,7 +600,7 @@ impl Component for UmapView {
             let canvas = self.node_ref.cast::<HtmlCanvasElement>().unwrap();
 
             canvas.set_width(800);
-            canvas.set_height(500);
+            canvas.set_height(500); ///////////////////////////////////////////////////////////////////////////// TODO: adapt somehow?
 
             let gl: GL = canvas
                 .get_context("webgl")
@@ -686,10 +689,20 @@ impl Component for UmapView {
 
             let u_camera_x = gl.get_uniform_location(&shader_program, "u_camera_x");
             let u_camera_y = gl.get_uniform_location(&shader_program, "u_camera_y");
-            let u_camera_zoom = gl.get_uniform_location(&shader_program, "u_camera_zoom");
+            let u_camera_zoom_x = gl.get_uniform_location(&shader_program, "u_camera_zoom_x");
+            let u_camera_zoom_y = gl.get_uniform_location(&shader_program, "u_camera_zoom_y");
             gl.uniform1f(u_camera_x.as_ref(), self.camera.x as f32);
             gl.uniform1f(u_camera_y.as_ref(), self.camera.y as f32);
-            gl.uniform1f(u_camera_zoom.as_ref(), self.camera.zoom as f32);
+            gl.uniform1f(u_camera_zoom_x.as_ref(), self.camera.zoom_x as f32);
+            gl.uniform1f(u_camera_zoom_y.as_ref(), self.camera.zoom_y as f32);
+
+
+            log::debug!("canvas {} {}   {:?}", canvas.width(), canvas.height(), self.camera);
+
+            let u_display_w = gl.get_uniform_location(&shader_program, "u_display_w");
+            let u_display_h = gl.get_uniform_location(&shader_program, "u_display_h");
+            gl.uniform1f(u_display_w.as_ref(), canvas.width() as f32);
+            gl.uniform1f(u_display_h.as_ref(), canvas.height() as f32);
 
             // can we attach one more vector???
 
@@ -763,6 +776,7 @@ fn mouseevent_get_cx(e: &MouseEvent) -> (i32,i32) {
 
 //    let x_cam = x*1024/(rect.width() as i32);
 //    let y_cam = y*1024/(rect.height() as i32);
+
 //    let x_cam = x*(canvas.width() as i32)/(rect.width() as i32);
 //    let y_cam = y*(canvas.height() as i32)/(rect.height() as i32);
 
