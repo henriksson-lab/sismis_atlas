@@ -9,6 +9,7 @@ use yew::prelude::*;
 #[derive(PartialEq)]
 pub enum CurrentPage {
     Home,
+    Atlas,
     About
 }
 
