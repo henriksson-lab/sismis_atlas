@@ -40,6 +40,9 @@ impl Model {
 
             <div class="landingdiv">
 
+                <img src="../assets/flexo_logo_v1.svg"/>
+                <p> </p>
+
                 //<img src="assets/Btyperdb_logo.svg" alt="rust image"/> 
                 <p style="color: white;">
                     <span style="text-decoration: underline; font-weight: bold;">{"F"}</span>
@@ -57,6 +60,8 @@ impl Model {
                 <p style="color: #40dba0;">
                     {"Version v1"}
                 </p>
+
+                <p> </p>
 
                 <button class="toolbutton" onclick={ctx.link().callback(|_| Msg::OpenPage(CurrentPage::Atlas))}>
                     {"Explore the FLExo Atlas"}

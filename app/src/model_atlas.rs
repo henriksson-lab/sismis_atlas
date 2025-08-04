@@ -37,6 +37,10 @@ impl Model {
         html! {
 
             <div>
+            
+                <div class="App-divider">
+                    {"FLExo UMAP"}
+                </div>
 
                 <UmapView on_cell_hovered={on_cell_hovered} on_cell_clicked={on_cell_clicked}/> //// we really do not want to re-render this if needed! how to avoid?
                 <p>
@@ -44,15 +48,15 @@ impl Model {
                 </p>
 
                 <div class="App-divider">
-                    {"Cluster metadata"}
+                    {"Selected exotoxin(s): metadata"}
                 </div>
                 { self.view_cluster_table(ctx) }
                 <div class="App-divider">
-                    {"Genbank representations"}
+                    {"Selected exotoxin(s): Pfam domains"}
                 </div>
                 { self.view_genbank_svgs(ctx) }
                 <div class="App-divider">
-                    {"Genbank sequences"}
+                    {"Selected exotoxin(s): GenBank"}
                 </div>
                 { self.view_genbank_table(ctx) }
 
