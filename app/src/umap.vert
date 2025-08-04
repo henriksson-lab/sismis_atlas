@@ -20,9 +20,15 @@ vec3 hsv2rgb(vec3 c)
 void main() {
 
     //Transform from 0..1024 world coordinates to [-1,1] camera coordinates
+    /*
     vec2 wh = vec2(
         1.0/1023.0 * 2.0,
         1.0/1023.0 * 2.0
+    );*/
+
+    vec2 wh = vec2(
+        1.0/800.0 * 2.0, ////////// these can be uniforms!
+        1.0/500.0 * 2.0
     );
 
     vec2 a_cam_pos = vec2(u_camera_x, u_camera_y);
