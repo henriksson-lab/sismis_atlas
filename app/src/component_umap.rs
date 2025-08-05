@@ -518,19 +518,37 @@ impl Component for UmapView {
         //List colors for this factor
         let mut list_levels = Vec::new();
         if let Some(coloring) = self.coloring.colorings.get(&self.current_coloring) {
-            for (i,lev) in coloring.list_levels.iter().enumerate() {
-                let scolor = format!("background-color:{}; min-width:18px;",self.list_colors.get(i).expect("failed to get a color"));
 
+            let max_rows=20;
+            let num_cols = (coloring.list_levels.len() as f32 / (max_rows as f32)).ceil() as usize; //is this guaranteed to always work?
+            let num_rows = max_rows.min(coloring.list_levels.len());
+
+
+            for i in 0..num_rows {
+                let mut list_cols = Vec::new();
+                for j in 0..num_cols {
+                    let cur_level = j*max_rows + i;
+                    if cur_level < coloring.list_levels.len() {
+                        let scolor = format!("background-color:{}; min-width:18px;",self.list_colors.get(cur_level).expect("failed to get a color"));
+                        let level_name = coloring.list_levels.get(cur_level).expect("failed to get a level");
+
+                        list_cols.push(html! {
+                            <td style={scolor}>
+                                { " " }                       
+                            </td> 
+                        });
+                        list_cols.push(html! {
+                            <td style="font-size: 12px;">
+                                { level_name.clone() }
+                            </td>
+                        });
+                    }
+                }
                 list_levels.push(html! {
                     <tr>
-                        <td style={scolor}>
-                            { " " }                       
-                        </td> 
-                        <td style="font-size: 12px;">
-                            { lev.clone() }
-                        </td>
+                        {list_cols}
                     </tr>
-                });
+                });                
             }
 
         }
@@ -576,8 +594,18 @@ impl Component for UmapView {
             let (x1,x2) = rect.range_x();
             let (y1,y2) = rect.range_y();
 
-            let (x1,y1) = self.camera.world2cam(x1, y1);
+            let (x1,y1) = self.camera.world2cam(x1, y1); //camera is in range [-1,1]
             let (x2,y2) = self.camera.world2cam(x2, y2);
+
+            let canvas = self.node_ref.cast::<HtmlCanvasElement>().unwrap();
+            let w = canvas.width() as f32;
+            let h = canvas.height() as f32;
+
+            let x1 = x1*w/2.0 + w/2.0;
+            let x2 = x2*w/2.0 + w/2.0;
+            let y1 = y1*h/2.0 + h/2.0;
+            let y2 = y2*h/2.0 + h/2.0;
+
             html! {
                 <rect x={x1.to_string()} y={y1.to_string()} width={(x2-x1).to_string()} height={(y2-y1).to_string()}    fill-opacity="0.1" fill="blue" stroke-width="2" stroke="black" stroke-dasharray="5,5"/> //fillstyle="fill:rgba(0,0,0,0.1);stroke-width:1;"
             }
@@ -591,7 +619,7 @@ impl Component for UmapView {
             <div style="display: flex; height: 500px; position: relative;">
 
                 <div style="position: absolute; left:0; top:0; display: flex; ">  // width: 80%
-                    <canvas ref={self.node_ref.clone()} style="border:1px solid #000000;" onmousemove={mousemoved} onclick={mouseclicked} onwheel={mousewheel} onmousedown={onmousedown} onmouseup={onmouseup} width="800" height="600"/>
+                    <canvas ref={self.node_ref.clone()} style="border:1px solid #000000;" onmousemove={mousemoved} onclick={mouseclicked} onwheel={mousewheel} onmousedown={onmousedown} onmouseup={onmouseup} width="800" height="500"/>
                 </div>
 
                 //Overlay SVG
@@ -601,7 +629,6 @@ impl Component for UmapView {
                             { format!("{}", if let Some(c) = &self.last_cell {c.clone()} else {String::new()}) }
                         </text>
                         { html_select }
-                        //<rect x="100" y="100" width="300" height="300" fill="blue"/>
                     </svg>
                 </div>
 
@@ -668,8 +695,8 @@ impl Component for UmapView {
             // for making GL calls.
             let canvas = self.node_ref.cast::<HtmlCanvasElement>().unwrap();
 
-            canvas.set_width(800);
-            canvas.set_height(500); ///////////////////////////////////////////////////////////////////////////// TODO: adapt somehow?
+            //canvas.set_width(800);
+            //canvas.set_height(500); ///////////////////////////////////////////////////////////////////////////// TODO: adapt somehow?
 
             let gl: GL = canvas
                 .get_context("webgl")

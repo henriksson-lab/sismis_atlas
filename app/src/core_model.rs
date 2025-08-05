@@ -84,7 +84,7 @@ impl Component for Model {
             },
 
             Msg::SetTableData(data) => {
-                //log::debug!("got {:?}",data);
+                log::debug!("got {:?}",data);
                 self.current_table_meta = data;
                 self.current_genbank = None;
                 true
@@ -117,7 +117,7 @@ impl Component for Model {
             },
 
             Msg::SetGenbank(data) => {
-                //log::debug!("got {:?}",data);
+                log::debug!("genbank got {:?}",data);
                 self.current_genbank = data;
                 true
             },

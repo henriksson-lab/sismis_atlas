@@ -30,7 +30,7 @@ impl UmapPointIndex {
     pub fn new() -> UmapPointIndex {
         UmapPointIndex {
             sectors: HashMap::new(),
-            max_dist: 0.0
+            max_dist: 1.0 //do not do 0.0 to avoid division by 0
         }
     }
 
@@ -81,7 +81,7 @@ impl UmapPointIndex {
         //Scan all sectors around mouse for candidate points
         let (sector_mid_x,sector_mid_y) = self.get_sector_id(x,y);
         let mut list_cand = Vec::new();
-        for sector_x in (sector_mid_x-1)..(sector_mid_x+2) {
+        for sector_x in (sector_mid_x-1)..(sector_mid_x+2) {   //////////////////////// overflow here. 
             for sector_y in (sector_mid_y-1)..(sector_mid_y+2) {
                 //Find closest point in sector
                 if let Some(sector) = self.sectors.get(&(sector_x, sector_y)) {
