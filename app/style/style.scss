@@ -96,6 +96,12 @@
   }
 }
 
+select {
+  text-align: left;
+  font-weight: 200;
+  font-size: calc(10px + 1vmin);
+  font-family: 'Roboto', sans-serif;
+}
 
 .App {
   text-align: left;
