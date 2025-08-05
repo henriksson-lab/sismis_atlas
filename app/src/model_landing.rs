@@ -58,7 +58,7 @@ impl Model {
                 </p>
 
                 <p style="color: #40dba0;">
-                    {"Version v1"}
+                    {"Version 1"}
                 </p>
 
                 <p> </p>
