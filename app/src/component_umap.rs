@@ -33,6 +33,9 @@ pub struct Camera2D {
     zoom_y: f32,
 }
 impl Camera2D {
+
+    ////////////////////////////////////////////////////////////
+    /// x
     pub fn new() -> Camera2D {
         Camera2D {
             x: 0.0,
@@ -42,6 +45,8 @@ impl Camera2D {
         }
     }
 
+    ////////////////////////////////////////////////////////////
+    /// x
     pub fn cam2world(&self, cx: f32, cy:f32) -> (f32,f32) {
         (
             cx/self.zoom_x + self.x,  
@@ -50,6 +55,8 @@ impl Camera2D {
     }
 
 
+    ////////////////////////////////////////////////////////////
+    /// x
     pub fn world2cam(&self, wx: f32, wy:f32) -> (f32,f32) {
         (
             (wx-self.x)*self.zoom_x,
@@ -58,7 +65,9 @@ impl Camera2D {
     }
 
 
-    pub fn fit_umap(&mut self, umap: &UmapData, width: f32, height: f32) {
+    ////////////////////////////////////////////////////////////
+    /// x
+    pub fn fit_umap(&mut self, umap: &UmapData) {
 
         let mut max_x = f32::MIN;
         let mut max_y = f32::MIN;
@@ -73,25 +82,46 @@ impl Camera2D {
 
             max_x = max_x.max(px);
             max_y = max_y.max(py);
-
             min_x = min_x.min(px);
             min_y = min_y.min(py);
         }
 
-        let margin = 300.0;
+        self.x = (min_x + max_x)/2.0;
+        self.y = (min_y + max_y)/2.0;
 
-        self.x = min_x - margin;
-        self.y = min_y - margin;
+        let world_dx = max_x - min_x;
+        let world_dy = max_y - min_y;
 
-        let world_dx = max_x - min_x + 2.0*margin;
-        let world_dy = max_y - min_y + 2.0*margin; /////////// something appears off with the camera ; is zoom applied in the wrong order of translate??
-
-        self.zoom_x = width/world_dx;
-        self.zoom_y = height/world_dy;
-
-        //log::debug!("range {} -- {}     {} -- {}", min_x, max_x,    min_y, max_y);
-        //log::debug!("set cam {:?}", self);
+        let margin = 0.9;
+        self.zoom_x = margin/(world_dx/2.0);
+        self.zoom_y = margin/(world_dy/2.0);
     }
+
+
+    ////////////////////////////////////////////////////////////
+    /// Zoom around this position.
+    /// i.e. it should be in the same position in camera coordinates after zoom has been applied
+    /// 
+    /// world2cam(mouse_pos, zoom1) = world2cam(mouse_pos, zoom2)
+    /// for: world2cam(wx,zoom_x) = (wx-cam_x)*zoom_x
+    /// 
+    /// Derivation:
+    /// (wx-cam_x1)*zoom1 = (wx-cam_x2)*zoom2
+    /// (wx-cam_x1)*zoom1/zoom2 = wx - cam_x2
+    /// cam_x2 = wx - (wx-cam_x1)*zoom1/zoom2
+    pub fn zoom_around(&mut self, wx: f32, wy: f32, scale: f32) {
+        let zoom1_x = self.zoom_x;
+        let zoom1_y = self.zoom_y;
+
+        //Apply zoom
+        self.zoom_x *= scale;
+        self.zoom_y *= scale;
+
+        //Correct position
+        self.x = wx - (wx-self.x)*zoom1_x/self.zoom_x;
+        self.y = wy - (wy-self.y)*zoom1_y/self.zoom_y;            
+    }
+
 }
 
 
@@ -134,12 +164,12 @@ pub enum MsgUMAP {
     GetCoord,
     SetCoord(Option<UmapData>),
 
-    MouseMove(i32,i32, bool),
+    MouseMove(f32,f32, bool),
     MouseClick,
     MouseWheel(f32),
 
-    MouseStartSelect(i32,i32),
-    MouseEndSelect(i32,i32),
+    MouseStartSelect(f32,f32),
+    MouseEndSelect(f32,f32),
 
     GetColoring,
     SetColoring(UmapMetadata),
@@ -165,7 +195,7 @@ pub struct Props {
 pub struct UmapView {
     node_ref: NodeRef,
     umap: Option<UmapData>,
-    last_pos: (i32,i32),
+    last_pos: (f32,f32),
     last_cell: Option<String>,
     umap_index: UmapPointIndex,
 
@@ -196,7 +226,7 @@ impl Component for UmapView {
         Self {
             node_ref: NodeRef::default(),
             umap: None,
-            last_pos: (0,0),
+            last_pos: (0.0,0.0),
             last_cell: None,
             umap_index: UmapPointIndex::new(),
             coloring: UmapMetadata::new(),
@@ -225,8 +255,7 @@ impl Component for UmapView {
                 }
 
                 if let Some(umap) = &data {
-                    let canvas = self.node_ref.cast::<HtmlCanvasElement>().unwrap();
-                    self.camera.fit_umap(&umap, canvas.width() as f32, canvas.height() as f32);
+                    self.camera.fit_umap(&umap);
                 }
 
                 self.umap = data;
@@ -310,11 +339,10 @@ impl Component for UmapView {
 
 
             MsgUMAP::MouseWheel(dy) => {
-                //TODO zoom around current position
-                //self.last_pos
+                let (cx,cy) = self.last_pos;
+                let (wx, wy) = self.camera.cam2world(cx, cy);
                 let scale = (10.0f32).powf(dy / 100.0);
-                self.camera.zoom_x *= scale;
-                self.camera.zoom_y *= scale;
+                self.camera.zoom_around(wx,wy, scale);
                 true
             },
 
@@ -361,7 +389,9 @@ impl Component for UmapView {
 
             MsgUMAP::SelectCurrentTool(t) => {
                 if t==CurrentTool::ZoomAll {
-                    self.camera = Camera2D::new();
+                    if let Some(umap) = &self.umap {
+                        self.camera.fit_umap(umap);
+                    }
                 } else {
                     self.current_tool=t;
                 }
@@ -807,23 +837,21 @@ pub fn rgbvec2string(c: Vec3) -> String {
 
 
 
-fn mouseevent_get_cx(e: &MouseEvent) -> (i32,i32) {
+fn mouseevent_get_cx(e: &MouseEvent) -> (f32,f32) {
     let target: Option<EventTarget> = e.target();
     let canvas: HtmlCanvasElement = target.and_then(|t| t.dyn_into::<HtmlCanvasElement>().ok()).expect("wrong type");
-
 
     let rect:DomRect = canvas.get_bounding_client_rect();
     let x = e.client_x() - (rect.left() as i32);
     let y = e.client_y() - (rect.top() as i32);
 
-//    let x_cam = x*1024/(rect.width() as i32);
-//    let y_cam = y*1024/(rect.height() as i32);
+    let w = rect.width() as f32;
+    let h = rect.height() as f32;
 
-//    let x_cam = x*(canvas.width() as i32)/(rect.width() as i32);
-//    let y_cam = y*(canvas.height() as i32)/(rect.height() as i32);
+    let x_cam = (x as f32 - w/2.0)/(w/2.0);
+    let y_cam = (y as f32 - h/2.0)/(h/2.0);
 
-//    log::debug!("rectttt {},{} {},{} {},{}", rect.left(), rect.top(),  rect.bottom(), rect.right(), rect.width(), rect.height());
+//    log::debug!("getcx  {} {}", x_cam, y_cam);
 
-    (x, y)
-//    (x_cam, y_cam)
+    (x_cam, y_cam)
 }
