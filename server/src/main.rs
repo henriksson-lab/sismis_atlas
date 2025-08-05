@@ -1,22 +1,18 @@
 pub mod genbank;
 pub mod sqlite;
 pub mod umap;
-pub mod sequence_data;
 
-use std::fs::File;
 use std::path::{PathBuf};
-use std::io::{BufReader};
+use std::io::{Cursor};
 
 use actix_files::Files;
 use actix_web::web::Json;
 use actix_web::{web, web::Data, App, HttpResponse, HttpServer, post, get};
-use my_web_app::{ClusterRequest, SequenceRequest, UmapMetadata};
-use serde::Deserialize;
-use serde::Serialize;
+use actix_web::{Responder}; 
+use my_web_app::{ClusterRequest, ConfigFile, UmapData, UmapMetadata};
 use std::sync::Mutex;
 
 use crate::genbank::convert_genbank;
-use crate::sequence_data::load_sequence_meta;
 use crate::sqlite::get_sequence_sql;
 use crate::genbank::query_genbank;
 use crate::umap::load_umap_data;
@@ -29,20 +25,12 @@ pub struct ServerData {
     conn: Connection,
     path_zip: PathBuf,
     umeta: UmapMetadata,
-
-}
-
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct ConfigFile {
-    data: PathBuf,
-    bind: String,
+    umap_points: UmapData,
 }
 
 
 
 
-use actix_web::{Responder}; 
 
 
 
@@ -51,16 +39,15 @@ use actix_web::{Responder};
 /// REST entry point
 #[get("/get_coloring")]
 async fn get_coloring(server_data: Data<Mutex<ServerData>>) -> impl Responder {
-
     let server_data =server_data.lock().unwrap();
-    serde_json::to_string(&server_data.umeta)
+    serde_cbor::to_vec(&server_data.umeta).expect("Failed to serialize")
 }
 
 
 ////////////////////////////////////////////////////////////
 /// REST entry point
 #[post("/get_sequence")]
-async fn get_sequence(server_data: Data<Mutex<ServerData>>, req_body: web::Json<SequenceRequest>) -> impl Responder {
+async fn get_sequence(server_data: Data<Mutex<ServerData>>, req_body: web::Json<ClusterRequest>) -> impl Responder {
 
     println!("{:?}",req_body);
     let Json(req) = req_body;
@@ -94,11 +81,11 @@ async fn get_genbank(server_data: Data<Mutex<ServerData>>, req_body: web::Json<C
 ////////////////////////////////////////////////////////////
 /// REST entry point
 #[get("/get_umap")]  //would be simpler if we used get
-async fn get_umap(_server_data: Data<Mutex<ServerData>>) -> impl Responder {
+async fn get_umap(server_data: Data<Mutex<ServerData>>) -> impl Responder {
+    let server_data =server_data.lock().unwrap();
+//    serde_json::to_string(&server_data.umap_points)
+    serde_cbor::to_vec(&server_data.umap_points).expect("Failed to serialize")
 
-    let ret = load_umap_data();
-
-    serde_json::to_string(&ret)
 }
 
 
@@ -123,15 +110,11 @@ async fn main() -> std::io::Result<()> {
     //std::env::set_var("RUST_BACKTRACE", "1");
     env_logger::init();
 
-    // Read the config file
-    let f_meta = File::open("config.json").expect("Could not open config.json");
-    let config_reader = BufReader::new(f_meta);
-    let config_file:ConfigFile = serde_json::from_reader(config_reader).expect("Could not open config file");
-
+    // Read the config file   .. or revert to previous?
+    let config_file = serde_json::from_reader(Cursor::new(include_bytes!("../../config.json"))).expect("Could not open config.json");
 
     //UMAP meta
-    let umeta = load_sequence_meta(&config_file);
-
+    let (umap_points,umeta) = load_umap_data(&config_file);
 
     // Open SQL database
     let path_store = std::path::Path::new(&config_file.data);
@@ -155,6 +138,7 @@ async fn main() -> std::io::Result<()> {
             conn,
             path_zip: gbk_zip,
             umeta: umeta,
+            umap_points: umap_points,
         }
     ));
 
@@ -171,7 +155,7 @@ async fn main() -> std::io::Result<()> {
                 web::route().to(|| HttpResponse::NotFound()),  //header("Location", "/").finish()
             )
     })
-    .bind(config_file.bind)? /////////////// for dev, "127.0.0.1:8080"  ; 127.0.0.1:5199 for beagle deployment
+    .bind((config_file.bind, config_file.port))? /////////////// for dev, "127.0.0.1:8080"  ; 127.0.0.1:5199 for beagle deployment   ; 0.0.0.0 should be fine!
     .run()
     .await
 }

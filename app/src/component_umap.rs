@@ -1,31 +1,21 @@
+use bytes::Buf;
 use my_web_app::{UmapData, UmapMetadata};
 use wasm_bindgen::JsCast;
 use web_sys::{DomRect, EventTarget, HtmlCanvasElement, HtmlSelectElement, WebGlRenderingContext as GL};
 use yew::{html, Callback, Component, Context, Event, Html, MouseEvent, NodeRef, WheelEvent};
 use yew::Properties;
 
-use crate::{core_model::get_host_url, umap_index::UmapPointIndex};
+use crate::umap_index::UmapPointIndex;
+use crate::{core_model::get_host_url};
 
 
 // see https://github.com/yewstack/yew/blob/master/examples/webgl/src/main.rs
 
 
-// Wrap gl in Rc (Arc for multi-threaded) so it can be injected into the render-loop closure.
-pub struct UmapView {
-    node_ref: NodeRef,
-    umap: Option<UmapData>,
-    last_pos: (i32,i32),
-    last_cell: Option<String>,
-    umap_index: UmapPointIndex,
-
-    coloring: UmapMetadata,
-    current_coloring: String,
-
-    current_tool: CurrentTool,
-    camera: Camera2D,
-}
 
 
+////////////////////////////////////////////////////////////
+/// x
 #[derive(Debug, PartialEq)]
 pub enum CurrentTool {
     Zoom,
@@ -33,28 +23,141 @@ pub enum CurrentTool {
     Select
 }
 
+
+
+////////////////////////////////////////////////////////////
+/// x
+#[derive(Debug, PartialEq)]
 pub struct Camera2D {
     x: f32,
     y: f32,
-    zoom: f32
+    zoom_x: f32,
+    zoom_y: f32,
 }
 impl Camera2D {
+
+    ////////////////////////////////////////////////////////////
+    /// x
     pub fn new() -> Camera2D {
         Camera2D {
             x: 0.0,
             y: 0.0,
-            zoom: 1.0
+            zoom_x: 1.0,
+            zoom_y: 1.0,
         }
     }
 
+    ////////////////////////////////////////////////////////////
+    /// x
     pub fn cam2world(&self, cx: f32, cy:f32) -> (f32,f32) {
         (
-            cx/self.zoom + self.x,
-            cy/self.zoom + self.y
+            cx/self.zoom_x + self.x,  
+            cy/self.zoom_y + self.y
         )
+    }
 
+
+    ////////////////////////////////////////////////////////////
+    /// x
+    pub fn world2cam(&self, wx: f32, wy:f32) -> (f32,f32) {
+        (
+            (wx-self.x)*self.zoom_x,
+            (wy-self.y)*self.zoom_y
+        )
+    }
+
+
+    ////////////////////////////////////////////////////////////
+    /// x
+    pub fn fit_umap(&mut self, umap: &UmapData) {
+
+        /*
+        let mut max_x = f32::MIN;
+        let mut max_y = f32::MIN;
+        let mut min_x = f32::MAX;
+        let mut min_y = f32::MAX;
+
+        //Figure out UMAP point range
+        let num_points = umap.num_point;
+        for i in 0..num_points {
+            let px = *umap.data.get(i*2+0).unwrap();
+            let py = *umap.data.get(i*2+1).unwrap();
+
+            max_x = max_x.max(px);
+            max_y = max_y.max(py);
+            min_x = min_x.min(px);
+            min_y = min_y.min(py);
+        }
+ */
+        
+        self.x = (umap.min_x + umap.max_x)/2.0;
+        self.y = (umap.min_y + umap.max_y)/2.0;
+
+        let world_dx = umap.max_x - umap.min_x;
+        let world_dy = umap.max_y - umap.min_y;
+
+        let margin = 0.9;
+        self.zoom_x = margin/(world_dx/2.0);
+        self.zoom_y = margin/(world_dy/2.0);
+    }
+
+
+    ////////////////////////////////////////////////////////////
+    /// Zoom around this position.
+    /// i.e. it should be in the same position in camera coordinates after zoom has been applied
+    /// 
+    /// world2cam(mouse_pos, zoom1) = world2cam(mouse_pos, zoom2)
+    /// for: world2cam(wx,zoom_x) = (wx-cam_x)*zoom_x
+    /// 
+    /// Derivation:
+    /// (wx-cam_x1)*zoom1 = (wx-cam_x2)*zoom2
+    /// (wx-cam_x1)*zoom1/zoom2 = wx - cam_x2
+    /// cam_x2 = wx - (wx-cam_x1)*zoom1/zoom2
+    pub fn zoom_around(&mut self, wx: f32, wy: f32, scale: f32) {
+        let zoom1_x = self.zoom_x;
+        let zoom1_y = self.zoom_y;
+
+        //Apply zoom
+        self.zoom_x *= scale;
+        self.zoom_y *= scale;
+
+        //Correct position
+        self.x = wx - (wx-self.x)*zoom1_x/self.zoom_x;
+        self.y = wy - (wy-self.y)*zoom1_y/self.zoom_y;            
+    }
+
+}
+
+
+
+////////////////////////////////////////////////////////////
+/// x
+#[derive(Debug, PartialEq)]
+pub struct Rectangle2D {
+    x1: f32,
+    x2: f32,
+    y1: f32,
+    y2: f32
+}
+impl Rectangle2D {
+    pub fn range_x(&self) -> (f32, f32) {
+        if self.x1<self.x2 {
+            (self.x1,self.x2)
+        } else {
+            (self.x2,self.x1)
+        }
+    }
+
+    pub fn range_y(&self) -> (f32, f32) {
+        if self.y1<self.y2 {
+            (self.y1,self.y2)
+        } else {
+            (self.y2,self.y1)
+        }
     }
 }
+
+
 
 
 ////////////////////////////////////////////////////////////
@@ -65,9 +168,12 @@ pub enum MsgUMAP {
     GetCoord,
     SetCoord(Option<UmapData>),
 
-    MouseMove(i32,i32, bool),
+    MouseMove(f32,f32, bool),
     MouseClick,
     MouseWheel(f32),
+
+    MouseStartSelect(f32,f32),
+    MouseEndSelect(f32,f32),
 
     GetColoring,
     SetColoring(UmapMetadata),
@@ -78,15 +184,38 @@ pub enum MsgUMAP {
 }
 
 
-
-
+////////////////////////////////////////////////////////////
+/// x
 #[derive(Properties, PartialEq)]
 pub struct Props {
     pub on_cell_hovered: Callback<Option<String>>,
-    pub on_cell_clicked: Callback<Option<String>>,
+    pub on_cell_clicked: Callback<Vec<String>>,
 }
 
 
+////////////////////////////////////////////////////////////
+/// 
+/// Wrap gl in Rc (Arc for multi-threaded) so it can be injected into the render-loop closure.
+pub struct UmapView {
+    node_ref: NodeRef,
+    umap: Option<UmapData>,
+    last_pos: (f32,f32),
+    last_cell: Option<String>,
+    umap_index: UmapPointIndex,
+
+    coloring: UmapMetadata,
+    current_coloring: String,
+
+    current_tool: CurrentTool,
+    camera: Camera2D,
+
+    current_selection: Option<Rectangle2D>,
+}
+
+
+
+////////////////////////////////////////////////////////////
+/// x
 impl Component for UmapView {
     type Message = MsgUMAP;
     type Properties = Props;
@@ -101,13 +230,14 @@ impl Component for UmapView {
         Self {
             node_ref: NodeRef::default(),
             umap: None,
-            last_pos: (0,0),
+            last_pos: (0.0,0.0),
             last_cell: None,
-            umap_index: UmapPointIndex::new(),
+            umap_index: UmapPointIndex::new(), //tricky... adapt to umap size??
             coloring: UmapMetadata::new(),
             current_coloring: String::new(),
             current_tool: CurrentTool::Select,
             camera: Camera2D::new(),
+            current_selection: None
         }
     }
 
@@ -123,10 +253,20 @@ impl Component for UmapView {
             MsgUMAP::SetCoord(data) => {
                 //log::debug!("got {:?}",data);
                 if let Some(umap) = &data {
-                    self.umap_index = UmapPointIndex::build_point_index(&umap);
+                    //Figure out mindist; 5% of umap size 
+                    let world_dx = umap.max_x - umap.min_x;
+                    let world_dy = umap.max_y - umap.min_y;
+                    let span = world_dx.min(world_dy);      //this is a bit nasty. umap better be somewhat square
+
+                    self.umap_index.build_point_index(&umap, span*0.05); 
                 } else {
-                    self.umap_index = UmapPointIndex::new();
+                    self.umap_index.clear();
                 }
+
+                if let Some(umap) = &data {
+                    self.camera.fit_umap(&umap);
+                }
+
                 self.umap = data;
                 true
             },
@@ -135,18 +275,16 @@ impl Component for UmapView {
                 //log::debug!("sending {}", json);
                 async fn get_data() -> MsgUMAP {
                     let client = reqwest::Client::new();
-                    let res: UmapData = client.get(format!("{}/get_umap",get_host_url()))
+                    //log::debug!("asking for umap");
+                    let res = client.get(format!("{}/get_umap",get_host_url()))
                         .header("Content-Type", "application/json")
                         .body("") // no body
                         .send()
                         .await
-                        .expect("Failed to send request")
-                        .json()
-                        .await
-                        .expect("Failed to get table data");
-
-                    
-
+                        .expect("Failed to send request").bytes().await.expect("Could not get binary data");
+                    //log::debug!("got umap");
+                    let res = serde_cbor::from_reader(res.reader()).expect("Failed to deserialize");
+                    //log::debug!("deserialized umap");
                     MsgUMAP::SetCoord(Some(res))
                 }
                 ctx.link().send_future(get_data());
@@ -155,6 +293,7 @@ impl Component for UmapView {
 
 
             MsgUMAP::MouseMove(x,y, press_left) => {
+                let mut do_update = false;
                 let last_pos = self.last_pos;
                 self.last_pos = (x,y);
 //                log::debug!(".. {:?}", last_pos);
@@ -163,7 +302,7 @@ impl Component for UmapView {
                 let (wx,wy) = self.camera.cam2world(x as f32, y as f32);
 
                 //Handle hovering
-                let cp = self.umap_index.get_closest_point(wx, wy, 100.0);
+                let cp = self.umap_index.get_closest_point(wx, wy);
                 //log::debug!("p: {:?}",cp);
                 //log::debug!("{} {}",x,y);
 
@@ -174,42 +313,49 @@ impl Component for UmapView {
                     }
                 }
 
+                //If we hover a new point, emit signal
                 let point_changed = self.last_cell != point_name;
                 self.last_cell = point_name.clone();
-
                 if point_changed {
                     ctx.props().on_cell_hovered.emit(point_name);
+                    do_update=true;
                 }
 
-                //Handle zooming
+                if let Some(sel) = &mut self.current_selection {
+                    sel.x2=wx;
+                    sel.y2=wy;
+                    //log::debug!("sel-move {:?}",sel);
+                }
+
+                //Handle panning
                 if self.current_tool == CurrentTool::Zoom && press_left {
                     let dx = x - last_pos.0;
                     let dy = y - last_pos.1;
                     //log::debug!("dd {:?}", (dx,dy));
-                    self.camera.x -= (dx as f32) / self.camera.zoom;
-                    self.camera.y -= (dy as f32) / self.camera.zoom;
+                    self.camera.x -= (dx as f32) / self.camera.zoom_x;
+                    self.camera.y -= (dy as f32) / self.camera.zoom_y;
                     return true;
                 }
-                false
+
+                //Always update view if a selection is going on
+                if let Some(_sel) = &self.current_selection {
+                    do_update=true;
+                }
+                do_update
             },
 
 
             MsgUMAP::MouseWheel(dy) => {
-                //TODO zoom around current position
-                //self.last_pos
-
-                self.camera.zoom *= (10.0f32).powf(dy / 100.0);
+                let (cx,cy) = self.last_pos;
+                let (wx, wy) = self.camera.cam2world(cx, cy);
+                let scale = (10.0f32).powf(dy / 100.0);
+                self.camera.zoom_around(wx,wy, scale);
                 true
             },
 
 
 
             MsgUMAP::MouseClick => {
-
-                if self.current_tool==CurrentTool::Select {
-                    ctx.props().on_cell_clicked.emit(self.last_cell.clone());
-                }
-
                 false
             },
 
@@ -219,15 +365,16 @@ impl Component for UmapView {
                 //log::debug!("sending {}", json);
                 async fn get_data() -> MsgUMAP {
                     let client = reqwest::Client::new();
-                    let res: UmapMetadata = client.get(format!("{}/get_coloring",get_host_url()))
+                    //log::debug!("get coloring");
+                    let res = client.get(format!("{}/get_coloring",get_host_url()))
                         .header("Content-Type", "application/json")
                         .body("") // no body
                         .send()
                         .await
-                        .expect("Failed to send request")
-                        .json()
-                        .await
-                        .expect("Failed to get table data");
+                        .expect("Failed to send request").bytes().await.expect("Could not get binary data");
+                    //log::debug!("got bytes");
+                    let res = serde_cbor::from_reader(res.reader()).expect("Failed to deserialize");
+                    //log::debug!("got deserialized");
                     MsgUMAP::SetColoring(res)
                 }
                 ctx.link().send_future(get_data());
@@ -250,18 +397,85 @@ impl Component for UmapView {
 
             MsgUMAP::SelectCurrentTool(t) => {
                 if t==CurrentTool::ZoomAll {
-                    self.camera = Camera2D::new();
+                    if let Some(umap) = &self.umap {
+                        self.camera.fit_umap(umap);
+                    }
                 } else {
                     self.current_tool=t;
                 }
                 true
             },
 
+
+            MsgUMAP::MouseStartSelect(cx,cy) => {
+                if self.current_tool==CurrentTool::Select {
+                    let (wx,wy) = self.camera.cam2world(cx as f32, cy as f32);
+                    self.current_selection = Some(Rectangle2D {
+                        x1: wx,
+                        x2: wx,
+                        y1: wy,
+                        y2: wy
+                    });
+                    //log::debug!("sel-start {:?}",self.current_selection);
+                    true
+                } else {
+                    false
+                }
+            }
+
+
+            MsgUMAP::MouseEndSelect(cx,cy) => {
+                if let Some(rect) = &mut self.current_selection {
+                    let (wx,wy) = self.camera.cam2world(cx as f32, cy as f32);
+                    rect.x2=wx;
+                    rect.y2=wy;
+
+                    if let Some(umap) = &self.umap {
+
+                        let (x1,x2) =rect.range_x();
+                        let (y1,y2) =rect.range_y();
+
+                        if x1==x2 && y1==y2 {
+                            log::debug!("this is a click");
+
+                            if self.current_tool==CurrentTool::Select {
+                                if let Some(cell) = &self.last_cell {
+                                    ctx.props().on_cell_clicked.emit(vec![cell.clone()]);
+                                }
+                            }
+
+                        } else {
+                            log::debug!("this is a rect select");
+
+                            //log::debug!("wrect {} -- {}     {} -- {}", x1,x2,    y1,y2);
+
+                            //Scan all points to see if they are within the selection 
+                            let mut selected_vert = Vec::new();
+                            let num_points = umap.num_point;
+                            let vertices = &umap.data;    
+                            for i in 0..num_points {
+                                let px = *vertices.get(i*2+0).unwrap();
+                                let py = *vertices.get(i*2+1).unwrap();
+                                //log::debug!("{} {}", px, py);
+                                if px>x1 && px<x2 && py>y1 && py<y2 { /////////////////////// TODO - invert y axis??   ////////////////// points halfway down are at y=500
+                                    let point_name = umap.ids.get(i).unwrap().clone();
+    //                                selected_vert.push(i);
+                                    selected_vert.push(point_name);
+                                }
+                            }
+                            //log::debug!("sel-end {:?}",rect);
+                            log::debug!("sel-en!! {:?}",selected_vert);
+
+                            ctx.props().on_cell_clicked.emit(selected_vert);                            
+                        }
+                    }
+                    self.current_selection=None;
+                }
+                true
+            }
+
         }
     }
-
-
-
 
 
 
@@ -271,18 +485,9 @@ impl Component for UmapView {
     fn view(&self, ctx: &Context<Self>) -> Html {
 
         let mousemoved = ctx.link().callback(move |e: MouseEvent | { 
-            let target: Option<EventTarget> = e.target();
-            let canvas: HtmlCanvasElement = target.and_then(|t| t.dyn_into::<HtmlCanvasElement>().ok()).expect("wrong type");
-
-            let rect:DomRect = canvas.get_bounding_client_rect();
-            let x = e.client_x() - (rect.left() as i32);
-            let y = e.client_y() - (rect.top() as i32);
-
-            let x_cam = x*1024/(rect.width() as i32);
-            let y_cam = y*1024/(rect.height() as i32);
-
+            e.prevent_default();
+            let (x_cam, y_cam) = mouseevent_get_cx(&e);
             let press_left = e.buttons() & 1 > 0;
-
 
             MsgUMAP::MouseMove(x_cam,y_cam, press_left)
             //there is mouse movement! https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent/movementX 
@@ -353,6 +558,21 @@ impl Component for UmapView {
             MsgUMAP::SelectCurrentTool(CurrentTool::ZoomAll)
         });
 
+
+
+        let onmousedown = ctx.link().callback(move |e: MouseEvent | { 
+            e.prevent_default();
+            let (x_cam, y_cam) = mouseevent_get_cx(&e);
+            MsgUMAP::MouseStartSelect(x_cam, y_cam)
+        });
+
+        let onmouseup = ctx.link().callback(move |e: MouseEvent | { 
+            e.prevent_default();
+            let (x_cam, y_cam) = mouseevent_get_cx(&e);
+            MsgUMAP::MouseEndSelect(x_cam, y_cam)
+        });
+
+        
     
         fn tool_style(pos: usize, selected: bool) -> String {
             let c=if selected {"#0099FF"} else {"lightgray"};
@@ -360,32 +580,53 @@ impl Component for UmapView {
         }
 
 
+
+        // Render selection box
+        let html_select = if let Some(rect) = &self.current_selection {
+
+            let (x1,x2) = rect.range_x();
+            let (y1,y2) = rect.range_y();
+
+            let (x1,y1) = self.camera.world2cam(x1, y1);
+            let (x2,y2) = self.camera.world2cam(x2, y2);
+            html! {
+                <rect x={x1.to_string()} y={y1.to_string()} width={(x2-x1).to_string()} height={(y2-y1).to_string()}    fill-opacity="0.1" fill="blue" stroke-width="2" stroke="black" stroke-dasharray="5,5"/> //fillstyle="fill:rgba(0,0,0,0.1);stroke-width:1;"
+            }
+        } else {
+            html! {""}
+        };
+
+
+
         html! {
             <div style="display: flex; height: 500px; position: relative;">
 
                 <div style="position: absolute; left:0; top:0; display: flex; ">  // width: 80%
-                    <canvas ref={self.node_ref.clone()} style="border:1px solid #000000;" onmousemove={mousemoved} onclick={mouseclicked} onwheel={mousewheel} width="800" height="600"/>
+                    <canvas ref={self.node_ref.clone()} style="border:1px solid #000000;" onmousemove={mousemoved} onclick={mouseclicked} onwheel={mousewheel} onmousedown={onmousedown} onmouseup={onmouseup} width="800" height="600"/>
                 </div>
 
-                <div style="position: absolute; left:0; top:0; display: flex; ">  // width: 80%
-                    <svg>
+                //Overlay SVG
+                <div style="position: absolute; left:0; top:0; display: flex; pointer-events: none; ">  
+                    <svg style="width: 800px; height: 500px; pointer-events: none;"> // note: WxH must cover canvas!!  
                         <text x=10 y=15>
                             { format!("{}", if let Some(c) = &self.last_cell {c.clone()} else {String::new()}) }
                         </text>
+                        { html_select }
+                        //<rect x="100" y="100" width="300" height="300" fill="blue"/>
                     </svg>
                 </div>
 
-                // select
+                // Button: Select
                 <div style={tool_style(760, self.current_tool==CurrentTool::Select)} onclick={click_select}>
                     <svg data-icon="polygon-filter" height="16" role="img" viewBox="0 0 16 16" width="16"><path d="M14 5c-.24 0-.47.05-.68.13L9.97 2.34c.01-.11.03-.22.03-.34 0-1.1-.9-2-2-2S6 .9 6 2c0 .04.01.08.01.12L2.88 4.21C2.61 4.08 2.32 4 2 4 .9 4 0 4.9 0 6c0 .74.4 1.38 1 1.72v4.55c-.6.35-1 .99-1 1.73 0 1.1.9 2 2 2 .74 0 1.38-.4 1.72-1h4.55c.35.6.98 1 1.72 1 1.1 0 2-.9 2-2 0-.37-.11-.7-.28-1L14 9c1.11-.01 2-.9 2-2s-.9-2-2-2zm-4.01 7c-.73 0-1.37.41-1.71 1H3.73c-.18-.3-.43-.55-.73-.72V7.72c.6-.34 1-.98 1-1.72 0-.04-.01-.08-.01-.12l3.13-2.09c.27.13.56.21.88.21.24 0 .47-.05.68-.13l3.35 2.79c-.01.11-.03.22-.03.34 0 .37.11.7.28 1l-2.29 4z" fill-rule="evenodd"></path></svg>
                 </div>
 
-                // zoom
+                // Button: Zoom
                 <div style={tool_style(730, self.current_tool==CurrentTool::Zoom)} onclick={click_zoom}>
                     <svg data-icon="zoom-in" height="16" role="img" viewBox="0 0 16 16" width="16"><path d="M7.99 5.99v-2c0-.55-.45-1-1-1s-1 .45-1 1v2h-2c-.55 0-1 .45-1 1s.45 1 1 1h2v2c0 .55.45 1 1 1s1-.45 1-1v-2h2c.55 0 1-.45 1-1s-.45-1-1-1h-2zm7.56 7.44l-2.67-2.68a6.94 6.94 0 001.11-3.76c0-3.87-3.13-7-7-7s-7 3.13-7 7 3.13 7 7 7c1.39 0 2.68-.42 3.76-1.11l2.68 2.67a1.498 1.498 0 102.12-2.12zm-8.56-1.44c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z" fill-rule="evenodd"></path></svg>
                 </div>
 
-                // zoom all
+                // Button: Zoom all
                 <div style={tool_style(700, self.current_tool==CurrentTool::ZoomAll)} onclick={click_zoomall}>
                     <svg data-icon="zoom-in" height="16" width="16" xmlns="http://www.w3.org/2000/svg"><path style="fill:none;stroke:#000;stroke-width:2.01074px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" d="M14.733 8.764v5.973H9.586m-8.29-5.973v5.973h5.146m8.29-7.5V1.264H9.587m-8.29 5.973V1.264h5.146"/></svg>
                 </div>
@@ -439,7 +680,7 @@ impl Component for UmapView {
             let canvas = self.node_ref.cast::<HtmlCanvasElement>().unwrap();
 
             canvas.set_width(800);
-            canvas.set_height(500);
+            canvas.set_height(500); ///////////////////////////////////////////////////////////////////////////// TODO: adapt somehow?
 
             let gl: GL = canvas
                 .get_context("webgl")
@@ -528,10 +769,20 @@ impl Component for UmapView {
 
             let u_camera_x = gl.get_uniform_location(&shader_program, "u_camera_x");
             let u_camera_y = gl.get_uniform_location(&shader_program, "u_camera_y");
-            let u_camera_zoom = gl.get_uniform_location(&shader_program, "u_camera_zoom");
+            let u_camera_zoom_x = gl.get_uniform_location(&shader_program, "u_camera_zoom_x");
+            let u_camera_zoom_y = gl.get_uniform_location(&shader_program, "u_camera_zoom_y");
             gl.uniform1f(u_camera_x.as_ref(), self.camera.x as f32);
             gl.uniform1f(u_camera_y.as_ref(), self.camera.y as f32);
-            gl.uniform1f(u_camera_zoom.as_ref(), self.camera.zoom as f32);
+            gl.uniform1f(u_camera_zoom_x.as_ref(), self.camera.zoom_x as f32);
+            gl.uniform1f(u_camera_zoom_y.as_ref(), self.camera.zoom_y as f32);
+
+
+            //log::debug!("canvas {} {}   {:?}", canvas.width(), canvas.height(), self.camera);
+
+            let u_display_w = gl.get_uniform_location(&shader_program, "u_display_w");
+            let u_display_h = gl.get_uniform_location(&shader_program, "u_display_h");
+            gl.uniform1f(u_display_w.as_ref(), canvas.width() as f32);
+            gl.uniform1f(u_display_h.as_ref(), canvas.height() as f32);
 
             // can we attach one more vector???
 
@@ -582,10 +833,33 @@ pub fn hsv2rgb(c: Vec3) -> Vec3 {
 }
 
 
-
+////////////////////////////////////////////////////////////
+/// x
 pub fn rgbvec2string(c: Vec3) -> String {
     let red=(c.0*255.0) as u8;
     let green=(c.1*255.0) as u8;
     let blue=(c.2*255.0) as u8;
     format!("#{:02X}{:02X}{:02X}", red, green, blue)
+}
+
+
+
+
+fn mouseevent_get_cx(e: &MouseEvent) -> (f32,f32) {
+    let target: Option<EventTarget> = e.target();
+    let canvas: HtmlCanvasElement = target.and_then(|t| t.dyn_into::<HtmlCanvasElement>().ok()).expect("wrong type");
+
+    let rect:DomRect = canvas.get_bounding_client_rect();
+    let x = e.client_x() - (rect.left() as i32);
+    let y = e.client_y() - (rect.top() as i32);
+
+    let w = rect.width() as f32;
+    let h = rect.height() as f32;
+
+    let x_cam = (x as f32 - w/2.0)/(w/2.0);
+    let y_cam = (y as f32 - h/2.0)/(h/2.0);
+
+//    log::debug!("getcx  {} {}", x_cam, y_cam);
+
+    (x_cam, y_cam)
 }

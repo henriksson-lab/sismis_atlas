@@ -6,7 +6,12 @@ varying highp vec3 color;
 
 uniform float u_camera_x;
 uniform float u_camera_y;
-uniform float u_camera_zoom;
+
+uniform float u_camera_zoom_x;
+uniform float u_camera_zoom_y;
+
+uniform float u_display_w;
+uniform float u_display_h;
 
 
 vec3 hsv2rgb(vec3 c)
@@ -19,23 +24,15 @@ vec3 hsv2rgb(vec3 c)
 
 void main() {
 
-    //Transform from 0..1024 world coordinates to [-1,1] camera coordinates
-    vec2 wh = vec2(
-        1.0/1023.0 * 2.0,
-        1.0/1023.0 * 2.0
-    );
-
+    //Transform from world coordinates to [-1,1] camera coordinates
     vec2 a_cam_pos = vec2(u_camera_x, u_camera_y);
     vec2 a_position2 = vec2(a_position.x, a_position.y);
     vec2 a_position3 = a_position2 - a_cam_pos;
 
-    vec2 scaled = a_position3 * wh;
-    vec2 scaled2 = scaled * u_camera_zoom;
+    vec2 u_camera_zoom = vec2(u_camera_zoom_x, u_camera_zoom_y);
+    vec2 scaled = a_position3 * u_camera_zoom;
 
-
-    
-    vec2 transformed = scaled2 - vec2(1.0,1.0);
-    gl_Position = vec4(transformed.x, -transformed.y, 0.0, 1.0);   // Invert camera y to match 
+    gl_Position = vec4(scaled.x, -scaled.y, 0.0, 1.0);   // Invert camera y to match 
 
     //Set size of points
     gl_PointSize = 5.0;

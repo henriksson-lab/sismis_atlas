@@ -1,4 +1,4 @@
-use my_web_app::{Cluster, ClusterRequest, Genbank, SequenceRequest};
+use my_web_app::{Cluster, ClusterRequest, Genbank};
 use web_sys::window;
 use yew::prelude::*;
 
@@ -29,14 +29,13 @@ pub enum Msg {
 
     OpenPage(CurrentPage),
 
-    GetSequence(String),
-    SetMetaTable(Option<Vec<Cluster>>),
+    GetTableData(Vec<String>),
+    SetTableData(Option<Vec<Cluster>>),
 
     GetGenbank(Vec<String>),
     SetGenbank(Option<Vec<Genbank>>),
 
-    HoverSequence(Option<String>),
-    ClickSequence(Option<String>),
+    ClickSequence(Vec<String>),
 }
 
 
@@ -48,8 +47,6 @@ pub struct Model {
 
     pub current_genbank: Option<Vec<Genbank>>,
     pub current_table_meta: Option<Vec<Cluster>>,
-
-    pub hover_sequence: Option<String>,        
 }
 
 impl Component for Model {
@@ -70,7 +67,6 @@ impl Component for Model {
             current_page: CurrentPage::Atlas,
             current_genbank: None,
             current_table_meta: None,
-            hover_sequence: None,
         }
     }
 
@@ -87,17 +83,17 @@ impl Component for Model {
                 true
             },
 
-            Msg::SetMetaTable(data) => {
+            Msg::SetTableData(data) => {
                 //log::debug!("got {:?}",data);
                 self.current_table_meta = data;
                 self.current_genbank = None;
                 true
             },
 
-            Msg::GetSequence(id) => {
+            Msg::GetTableData(id) => {
 
-                let s=SequenceRequest {
-                    sequence_id: id
+                let s=ClusterRequest {
+                    cluster_id: id
                 };
 
                 let json = serde_json::to_string(&s).expect("Failed to generate json");
@@ -114,7 +110,7 @@ impl Component for Model {
                         .await
                         .expect("Failed to get table data");
 
-                    Msg::SetMetaTable(Some(res))
+                    Msg::SetTableData(Some(res))
                 }
                 ctx.link().send_future(get_data(json));
                 false
@@ -152,24 +148,10 @@ impl Component for Model {
                 false
             },
 
-
-            Msg::HoverSequence(id) => {
-                self.hover_sequence = id;
-                true
-            }
-
             Msg::ClickSequence(id) => {
 
                 //Load metadata!
-
-                self.hover_sequence = id.clone();
-
-                if let Some(id) = &id {
-                    ctx.link().send_message(Msg::GetSequence(id.clone()));
-                } else {
-                    
-                }
-
+                ctx.link().send_message(Msg::GetTableData(id.clone()));
 
                 true
             },
@@ -255,3 +237,5 @@ pub fn get_host_url() -> String {
 }
 
 // https://yew.rs/docs/next/advanced-topics/struct-components/hoc
+
+
