@@ -36,8 +36,15 @@ impl Model {
                         {"💾 Developers"}
                     </h1>
                     <p>
-                        {"FLExo and the FLExo Atlas were developed by the 
-                        CompMicroLab and HenLab, both at Umeå University in beautiful Umeå, Sweden!"}
+                        {"FLExo and the FLExo Atlas were developed by the "}
+                        <a href="http://microbe.dev">
+                            {"CompMicroLab"}
+                        </a>
+                        {" and "}
+                        <a href="http://www.henlab.org">
+                            {"HenLab"}
+                        </a> 
+                        {", both at Umeå University in beautiful Umeå, Sweden!"}
                     </p> 
                 </div>
                 <br />
