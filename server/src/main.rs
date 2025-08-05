@@ -1,7 +1,6 @@
 pub mod genbank;
 pub mod sqlite;
 pub mod umap;
-pub mod sequence_data;
 
 use std::path::{PathBuf};
 use std::io::{Cursor};
@@ -10,7 +9,7 @@ use actix_files::Files;
 use actix_web::web::Json;
 use actix_web::{web, web::Data, App, HttpResponse, HttpServer, post, get};
 use actix_web::{Responder}; 
-use my_web_app::{ClusterRequest, ConfigFile, SequenceRequest, UmapData, UmapMetadata};
+use my_web_app::{ClusterRequest, ConfigFile, UmapData, UmapMetadata};
 use std::sync::Mutex;
 
 use crate::genbank::convert_genbank;
@@ -48,7 +47,7 @@ async fn get_coloring(server_data: Data<Mutex<ServerData>>) -> impl Responder {
 ////////////////////////////////////////////////////////////
 /// REST entry point
 #[post("/get_sequence")]
-async fn get_sequence(server_data: Data<Mutex<ServerData>>, req_body: web::Json<SequenceRequest>) -> impl Responder {
+async fn get_sequence(server_data: Data<Mutex<ServerData>>, req_body: web::Json<ClusterRequest>) -> impl Responder {
 
     println!("{:?}",req_body);
     let Json(req) = req_body;

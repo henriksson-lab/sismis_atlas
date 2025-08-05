@@ -1,4 +1,4 @@
-use my_web_app::{Cluster, ClusterRequest, Genbank, SequenceRequest};
+use my_web_app::{Cluster, ClusterRequest, Genbank};
 use web_sys::window;
 use yew::prelude::*;
 
@@ -29,8 +29,8 @@ pub enum Msg {
 
     OpenPage(CurrentPage),
 
-    GetSequence(Vec<String>),
-    SetMetaTable(Option<Vec<Cluster>>),
+    GetTableData(Vec<String>),
+    SetTableData(Option<Vec<Cluster>>),
 
     GetGenbank(Vec<String>),
     SetGenbank(Option<Vec<Genbank>>),
@@ -83,17 +83,17 @@ impl Component for Model {
                 true
             },
 
-            Msg::SetMetaTable(data) => {
+            Msg::SetTableData(data) => {
                 //log::debug!("got {:?}",data);
                 self.current_table_meta = data;
                 self.current_genbank = None;
                 true
             },
 
-            Msg::GetSequence(id) => {
+            Msg::GetTableData(id) => {
 
-                let s=SequenceRequest {
-                    sequence_id: id
+                let s=ClusterRequest {
+                    cluster_id: id
                 };
 
                 let json = serde_json::to_string(&s).expect("Failed to generate json");
@@ -110,7 +110,7 @@ impl Component for Model {
                         .await
                         .expect("Failed to get table data");
 
-                    Msg::SetMetaTable(Some(res))
+                    Msg::SetTableData(Some(res))
                 }
                 ctx.link().send_future(get_data(json));
                 false
@@ -151,7 +151,7 @@ impl Component for Model {
             Msg::ClickSequence(id) => {
 
                 //Load metadata!
-                ctx.link().send_message(Msg::GetSequence(id.clone()));
+                ctx.link().send_message(Msg::GetTableData(id.clone()));
 
                 true
             },

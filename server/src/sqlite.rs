@@ -1,6 +1,6 @@
 
 use actix_web::web::Data;
-use my_web_app::{Cluster, SequenceRequest};
+use my_web_app::{Cluster, ClusterRequest};
 use rusqlite::{Result};
 use std::sync::Mutex;
 
@@ -18,16 +18,16 @@ CREATE TABLE IF NOT EXISTS "clusters"(
 /// Get entries from the strain table given search criteria
 pub fn get_sequence_sql(
     server_data: &Data<Mutex<ServerData>>,
-    req: &SequenceRequest //String
+    req: &ClusterRequest //String
 ) -> Result<Vec<Cluster>> {
      
     let server_data =server_data.lock().unwrap();
         
-    let mut stmt = server_data.conn.prepare("SELECT * from clusters where sequence_id = ?1")?;  //note, in sqlite = is fine and required to use the index it seems. other databases need LIKE
+    let mut stmt = server_data.conn.prepare("SELECT * from clusters where cluster_id = ?1")?;  //note, in sqlite = is fine and required to use the index it seems. other databases need LIKE
      
 
     let mut all_rows = Vec::new();
-    for sequence_id in &req.sequence_id {
+    for sequence_id in &req.cluster_id {
 
         let rows = stmt.query_map([sequence_id], |row| {
             let out = Cluster {

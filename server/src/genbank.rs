@@ -1,31 +1,36 @@
-
-//use std::fs::File;
 use std::path::{PathBuf};
 use std::io::{BufRead, BufReader, Read};
-
+use std::sync::Mutex;
 
 use actix_web::web::BytesMut;
 use actix_web::web::BufMut;
+use actix_web::web::Data;
+
+use my_web_app::{ClusterRequest, Genbank};
+use tokio::fs::File;
+use crate::ServerData;
 
 use archflow::{
  compress::FileOptions, compress::tokio::archive::ZipArchive, compression::CompressionMethod,
  error::ArchiveError,
- };
+};
 
- use my_web_app::{ClusterRequest, Genbank};
-use tokio::fs::File;
 
+
+////////////////////////////////////////////////////////////
+/// x
 fn parse_name(line: &String) -> Option<String> {
     let line = &line["LOCUS       ".len()..];
     let mut iter = line.split_ascii_whitespace();
     let name = iter.next().expect("Could not get name");
-    println!("name: {}",name);
+    println!("  name: {}",name);
     Some(name.to_string())
 //  "LOCUS       GUT_GENOME002323-scaffold_16_cluster_1"  then space etc
 }
 
-//-> anyhow::Result<()>
 pub async fn convert_genbank(fname: &PathBuf, fname_zip: &PathBuf) -> Result<(), ArchiveError> {
+
+    let mut done_files = 0;
 
     let file_zip = File::create(fname_zip).await?;
     let options = FileOptions::default().compression_method(CompressionMethod::Deflate());
@@ -60,8 +65,13 @@ pub async fn convert_genbank(fname: &PathBuf, fname_zip: &PathBuf) -> Result<(),
                 b.put(line.as_bytes());
             }
         } else { 
-            //we are do
+            //we are done
             break;
+        }
+
+        done_files += 1;
+        if done_files%10 == 0 {
+            println!("# files done: {}",done_files);
         }
     }
 
@@ -72,7 +82,11 @@ pub async fn convert_genbank(fname: &PathBuf, fname_zip: &PathBuf) -> Result<(),
         b.clear();
     }
 
+    println!("# files done total: {}, finalizing",done_files);
+
     archive.finalize().await?;
+
+    println!("Archive finalized");
 
     Ok(())
 }
@@ -81,18 +95,11 @@ pub async fn convert_genbank(fname: &PathBuf, fname_zip: &PathBuf) -> Result<(),
 
 
 
-
-use actix_web::web::Data;
-use std::sync::Mutex;
-use crate::ServerData;
-
-
 ////////////////////////////////////////////////////////////
-/// 
+/// x
 pub fn query_genbank(
     server_data: &Data<Mutex<ServerData>>,
     req: &ClusterRequest
-//) -> Result<String,()> {
 ) -> anyhow::Result<Vec<Genbank>> { //>Result<Vec<u8>,Error>
 
 

@@ -1,5 +1,4 @@
 use my_web_app::UmapData;
-use rstar::{primitives::GeomWithData, RTree};
 
 /// This data structure takes quite a while to build... 
 /// do it asynch, after rendering, or provide a simpler algo?
@@ -10,6 +9,15 @@ use std::collections::HashMap;
 type Sector = (i32,i32);
 
 type UmapPoint = (f32,f32,usize);
+
+
+
+fn dist2(x1:f32,y1:f32,   x2:f32,y2:f32) -> f32 {
+        let dx = x1 - x2;
+        let dy = y1 - y2;
+        let dist2 = dx*dx + dy*dy;
+        dist2
+}
 
 
 
@@ -128,86 +136,3 @@ impl UmapPointIndex {
 
 
 
-
-
-fn dist2(x1:f32,y1:f32,   x2:f32,y2:f32) -> f32 {
-        let dx = x1 - x2;
-        let dy = y1 - y2;
-        let dist2 = dx*dx + dy*dy;
-        dist2
-}
-
-
-
-
-/*
-
-
-//////////////////////////////
-////////////////////////////// Below is for using RTree. it is only fast for about 100 points, maybe 1000
-//////////////////////////////
-
-type UmapPoint = GeomWithData<[f32; 2], usize>;
-
-pub struct UmapPointIndexTree {
-    index: RTree<GeomWithData<[f32; 2], usize>>
-}
-impl UmapPointIndexTree {
-
-    pub fn new() -> UmapPointIndexTree {
-        let index = RTree::new();
-
-        UmapPointIndexTree {
-            index: index
-        }
-
-    }
-
-    pub fn insert(&mut self, x: f32, y: f32, index: usize) {
-        self.index.insert(UmapPoint::new([x, y], index));
-    }
-
-    pub fn build_point_index(umap: &UmapData) -> UmapPointIndexTree {
-
-        let mut index = RTree::new();
-        for i in 0..umap.num_point {
-            let x = umap.data[i*2+0];
-            let y: f32 = umap.data[i*2+1];
-            index.insert(UmapPoint::new([x, y], i));
-        }
-
-        UmapPointIndexTree {
-            index
-        }
-    }
-
-
-    pub fn get_closest_point(&self, x:f32, y:f32, max_dist:f32) -> Option<(usize, f32)> {
-
-        let search_pos = [x, y];
-
-        let p = self.index.nearest_neighbor(&search_pos);
-
-        if let Some(p) = p {
-
-            let v = p.geom();
-            let point_x = v[0];
-            let point_y = v[1];
-
-            let dx = point_x - x;
-            let dy = point_y - y;
-            let dist2 = dx*dx + dy*dy;
-            //log::debug!("dist {} {}", dist2, p.data);
-
-            if dist2 < max_dist*max_dist {  // can remove this extra test
-                Some((p.data, dist2))
-            } else {
-                None
-            }
-        } else {
-            None
-        }
-
-    }
-
-} */

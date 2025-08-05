@@ -34,7 +34,7 @@ pub struct CsvSeqMeta {
     pub gcf_id: String,
 //    pub GCF_ID: String,
 
-    pub sequence_id: String,
+    pub cluster_id: String,
     pub x: f32,
     pub y: f32,
 
@@ -79,7 +79,7 @@ pub fn load_umap_data(config_file: &ConfigFile) -> (UmapData, UmapMetadata) {
         //Point data
         vertices.push(record.x);
         vertices.push(record.y);
-        ids.push(record.sequence_id);
+        ids.push(record.cluster_id);
         num_points += 1;
     }
 
@@ -91,12 +91,11 @@ pub fn load_umap_data(config_file: &ConfigFile) -> (UmapData, UmapMetadata) {
 
 
 
+    //Figure out UMAP point range
     let mut max_x = f32::MIN;
     let mut max_y = f32::MIN;
     let mut min_x = f32::MAX;
     let mut min_y = f32::MAX;
-
-    //Figure out UMAP point range
     for i in 0..num_points {
         let px = *vertices.get(i*2+0).unwrap();
         let py = *vertices.get(i*2+1).unwrap();
