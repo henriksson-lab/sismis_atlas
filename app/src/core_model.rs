@@ -237,3 +237,5 @@ pub fn get_host_url() -> String {
 }
 
 // https://yew.rs/docs/next/advanced-topics/struct-components/hoc
+
+

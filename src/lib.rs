@@ -1,5 +1,5 @@
 
-use std::collections::{BTreeMap, HashMap};
+use std::{collections::{BTreeMap, HashMap}, path::PathBuf};
 
 use serde::{Deserialize, Serialize};
 
@@ -107,6 +107,11 @@ pub struct UmapData {
     pub num_point: usize,
     pub data: Vec<f32>,
     pub ids: Vec<String>,
+
+    pub max_x: f32,
+    pub max_y: f32,
+    pub min_x: f32,
+    pub min_y: f32,
 }
 
 
@@ -136,6 +141,18 @@ pub struct ClusterRequest {
 pub struct SequenceRequest {
     pub sequence_id: Vec<String>,
 }
+
+
+
+////////////////////////////////////////////////////////////
+/// x
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ConfigFile {
+    pub data: PathBuf,
+    pub bind: String,
+    pub port: u16
+}
+
 
 
 

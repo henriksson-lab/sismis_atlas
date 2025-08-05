@@ -1,10 +1,12 @@
+use bytes::Buf;
 use my_web_app::{UmapData, UmapMetadata};
 use wasm_bindgen::JsCast;
 use web_sys::{DomRect, EventTarget, HtmlCanvasElement, HtmlSelectElement, WebGlRenderingContext as GL};
 use yew::{html, Callback, Component, Context, Event, Html, MouseEvent, NodeRef, WheelEvent};
 use yew::Properties;
 
-use crate::{core_model::get_host_url, umap_index::UmapPointIndex};
+use crate::umap_index::UmapPointIndex;
+use crate::{core_model::get_host_url};
 
 
 // see https://github.com/yewstack/yew/blob/master/examples/webgl/src/main.rs
@@ -69,6 +71,7 @@ impl Camera2D {
     /// x
     pub fn fit_umap(&mut self, umap: &UmapData) {
 
+        /*
         let mut max_x = f32::MIN;
         let mut max_y = f32::MIN;
         let mut min_x = f32::MAX;
@@ -85,12 +88,13 @@ impl Camera2D {
             min_x = min_x.min(px);
             min_y = min_y.min(py);
         }
+ */
+        
+        self.x = (umap.min_x + umap.max_x)/2.0;
+        self.y = (umap.min_y + umap.max_y)/2.0;
 
-        self.x = (min_x + max_x)/2.0;
-        self.y = (min_y + max_y)/2.0;
-
-        let world_dx = max_x - min_x;
-        let world_dy = max_y - min_y;
+        let world_dx = umap.max_x - umap.min_x;
+        let world_dy = umap.max_y - umap.min_y;
 
         let margin = 0.9;
         self.zoom_x = margin/(world_dx/2.0);
@@ -228,7 +232,7 @@ impl Component for UmapView {
             umap: None,
             last_pos: (0.0,0.0),
             last_cell: None,
-            umap_index: UmapPointIndex::new(),
+            umap_index: UmapPointIndex::new(), //tricky... adapt to umap size??
             coloring: UmapMetadata::new(),
             current_coloring: String::new(),
             current_tool: CurrentTool::Select,
@@ -249,9 +253,14 @@ impl Component for UmapView {
             MsgUMAP::SetCoord(data) => {
                 //log::debug!("got {:?}",data);
                 if let Some(umap) = &data {
-                    self.umap_index = UmapPointIndex::build_point_index(&umap);
+                    //Figure out mindist; 5% of umap size 
+                    let world_dx = umap.max_x - umap.min_x;
+                    let world_dy = umap.max_y - umap.min_y;
+                    let span = world_dx.min(world_dy);      //this is a bit nasty. umap better be somewhat square
+
+                    self.umap_index.build_point_index(&umap, span*0.05); 
                 } else {
-                    self.umap_index = UmapPointIndex::new();
+                    self.umap_index.clear();
                 }
 
                 if let Some(umap) = &data {
@@ -266,18 +275,16 @@ impl Component for UmapView {
                 //log::debug!("sending {}", json);
                 async fn get_data() -> MsgUMAP {
                     let client = reqwest::Client::new();
-                    let res: UmapData = client.get(format!("{}/get_umap",get_host_url()))
+                    //log::debug!("asking for umap");
+                    let res = client.get(format!("{}/get_umap",get_host_url()))
                         .header("Content-Type", "application/json")
                         .body("") // no body
                         .send()
                         .await
-                        .expect("Failed to send request")
-                        .json()
-                        .await
-                        .expect("Failed to get table data");
-
-                    
-
+                        .expect("Failed to send request").bytes().await.expect("Could not get binary data");
+                    //log::debug!("got umap");
+                    let res = serde_cbor::from_reader(res.reader()).expect("Failed to deserialize");
+                    //log::debug!("deserialized umap");
                     MsgUMAP::SetCoord(Some(res))
                 }
                 ctx.link().send_future(get_data());
@@ -295,7 +302,7 @@ impl Component for UmapView {
                 let (wx,wy) = self.camera.cam2world(x as f32, y as f32);
 
                 //Handle hovering
-                let cp = self.umap_index.get_closest_point(wx, wy, 100.0);
+                let cp = self.umap_index.get_closest_point(wx, wy);
                 //log::debug!("p: {:?}",cp);
                 //log::debug!("{} {}",x,y);
 
@@ -358,15 +365,16 @@ impl Component for UmapView {
                 //log::debug!("sending {}", json);
                 async fn get_data() -> MsgUMAP {
                     let client = reqwest::Client::new();
-                    let res: UmapMetadata = client.get(format!("{}/get_coloring",get_host_url()))
+                    //log::debug!("get coloring");
+                    let res = client.get(format!("{}/get_coloring",get_host_url()))
                         .header("Content-Type", "application/json")
                         .body("") // no body
                         .send()
                         .await
-                        .expect("Failed to send request")
-                        .json()
-                        .await
-                        .expect("Failed to get table data");
+                        .expect("Failed to send request").bytes().await.expect("Could not get binary data");
+                    //log::debug!("got bytes");
+                    let res = serde_cbor::from_reader(res.reader()).expect("Failed to deserialize");
+                    //log::debug!("got deserialized");
                     MsgUMAP::SetColoring(res)
                 }
                 ctx.link().send_future(get_data());
