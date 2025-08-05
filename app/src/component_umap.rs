@@ -56,6 +56,42 @@ impl Camera2D {
             (wy-self.y)*self.zoom_y
         )
     }
+
+
+    pub fn fit_umap(&mut self, umap: &UmapData, width: f32, height: f32) {
+
+        let mut max_x = f32::MIN;
+        let mut max_y = f32::MIN;
+        let mut min_x = f32::MAX;
+        let mut min_y = f32::MAX;
+
+        //Figure out UMAP point range
+        let num_points = umap.num_point;
+        for i in 0..num_points {
+            let px = *umap.data.get(i*2+0).unwrap();
+            let py = *umap.data.get(i*2+1).unwrap();
+
+            max_x = max_x.max(px);
+            max_y = max_y.max(py);
+
+            min_x = min_x.min(px);
+            min_y = min_y.min(py);
+        }
+
+        let margin = 300.0;
+
+        self.x = min_x - margin;
+        self.y = min_y - margin;
+
+        let world_dx = max_x - min_x + 2.0*margin;
+        let world_dy = max_y - min_y + 2.0*margin; /////////// something appears off with the camera ; is zoom applied in the wrong order of translate??
+
+        self.zoom_x = width/world_dx;
+        self.zoom_y = height/world_dy;
+
+        //log::debug!("range {} -- {}     {} -- {}", min_x, max_x,    min_y, max_y);
+        //log::debug!("set cam {:?}", self);
+    }
 }
 
 
@@ -187,6 +223,12 @@ impl Component for UmapView {
                 } else {
                     self.umap_index = UmapPointIndex::new();
                 }
+
+                if let Some(umap) = &data {
+                    let canvas = self.node_ref.cast::<HtmlCanvasElement>().unwrap();
+                    self.camera.fit_umap(&umap, canvas.width() as f32, canvas.height() as f32);
+                }
+
                 self.umap = data;
                 true
             },
@@ -504,8 +546,8 @@ impl Component for UmapView {
         // Render selection box
         let html_select = if let Some(rect) = &self.current_selection {
 
-            let (x1,x2) =rect.range_x();
-            let (y1,y2) =rect.range_y();
+            let (x1,x2) = rect.range_x();
+            let (y1,y2) = rect.range_y();
 
             let (x1,y1) = self.camera.world2cam(x1, y1);
             let (x2,y2) = self.camera.world2cam(x2, y2);
@@ -697,7 +739,7 @@ impl Component for UmapView {
             gl.uniform1f(u_camera_zoom_y.as_ref(), self.camera.zoom_y as f32);
 
 
-            log::debug!("canvas {} {}   {:?}", canvas.width(), canvas.height(), self.camera);
+            //log::debug!("canvas {} {}   {:?}", canvas.width(), canvas.height(), self.camera);
 
             let u_display_w = gl.get_uniform_location(&shader_program, "u_display_w");
             let u_display_h = gl.get_uniform_location(&shader_program, "u_display_h");

@@ -23,7 +23,7 @@ pub fn get_sequence_sql(
      
     let server_data =server_data.lock().unwrap();
         
-    let mut stmt = server_data.conn.prepare("SELECT * from clusters where sequence_id LIKE ?1")?;
+    let mut stmt = server_data.conn.prepare("SELECT * from clusters where sequence_id = ?1")?;  //note, in sqlite = is fine and required to use the index it seems. other databases need LIKE
      
 
     let mut all_rows = Vec::new();
