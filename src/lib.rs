@@ -1,5 +1,5 @@
 
-use std::{collections::{BTreeMap, HashMap}, path::PathBuf};
+use std::{collections::{BTreeMap, HashMap, HashSet}, path::PathBuf};
 
 use serde::{Deserialize, Serialize};
 
@@ -54,17 +54,27 @@ impl DatabaseColumnMeta {
         self.list_levels.clear();
         self.map_levels.clear();
 
+        //Gather all possible levels
+        let mut set_colors = HashSet::new();
+        for e in inlist {
+            set_colors.insert(e.clone());
+        }
+
+        //Sort levels, set up map
+        let mut i=0;
+        for e in set_colors {
+            self.map_levels.insert(e.clone(), i);
+            self.list_levels.push(e);
+            i += 1;
+        }
+        self.list_levels.sort_by(|a, b| human_sort::compare(a.as_str(),b.as_str()));
+
+        //Map to factors
         let mut outlist = Vec::new();
         outlist.reserve(inlist.len());
         for e in inlist {
-            if let Some(i) = self.map_levels.get(e) {
-                outlist.push(*i as u8);
-            } else {
-                let i = self.list_levels.len() as u8;
-                self.map_levels.insert(e.clone(), i);
-                self.list_levels.push(e.clone());
-                outlist.push(i);
-            }
+            let i = self.map_levels.get(e).unwrap();
+            outlist.push(*i as u8);
         }
         self.values=outlist;
     }

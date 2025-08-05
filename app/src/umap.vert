@@ -39,8 +39,15 @@ void main() {
 
 
     //Set color via HSV. Then forward color
-    vec3 hsv = vec3(a_position.z, 1.0, 1.0);
-    color = hsv2rgb(hsv);
+    //vec3 hsv = vec3(a_position.z, 1.0, 1.0);
+    //color = hsv2rgb(hsv);
+
+
+
+    //Set color based on lookup. 99 colors
+    color = vec3(0.0, 0.0, 0.0);
+    //COLORBLOCK//
+
 }
 
 

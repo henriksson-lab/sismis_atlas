@@ -6,24 +6,6 @@ use serde::{Deserialize, Serialize};
 use crate::ConfigFile;
 
 
-/* 
-////////////////////////////////////////////////////////////
-/// 
-#[derive(Debug, Deserialize, Serialize)]
-pub struct CsvUmapPoint {
-    pub sequence_id: String,
-    pub x: f32,
-    pub y: f32,
-
-//    pub seurat: String,
-//    pub vfdb: String,
-    
-    // Seurat	VFDB
-}
-*/
-
-//#[serde(rename_all = "snake_case")] 
-
 
 ////////////////////////////////////////////////////////////
 /// 
@@ -32,7 +14,6 @@ pub struct CsvSeqMeta {
 
     #[serde(rename(deserialize = "GCF_ID"))]
     pub gcf_id: String,
-//    pub GCF_ID: String,
 
     pub cluster_id: String,
     pub x: f32,

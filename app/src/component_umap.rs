@@ -1,3 +1,7 @@
+use std::io::BufRead;
+use std::io::Cursor;
+use std::io::BufReader;
+
 use bytes::Buf;
 use my_web_app::{UmapData, UmapMetadata};
 use wasm_bindgen::JsCast;
@@ -70,26 +74,6 @@ impl Camera2D {
     ////////////////////////////////////////////////////////////
     /// x
     pub fn fit_umap(&mut self, umap: &UmapData) {
-
-        /*
-        let mut max_x = f32::MIN;
-        let mut max_y = f32::MIN;
-        let mut min_x = f32::MAX;
-        let mut min_y = f32::MAX;
-
-        //Figure out UMAP point range
-        let num_points = umap.num_point;
-        for i in 0..num_points {
-            let px = *umap.data.get(i*2+0).unwrap();
-            let py = *umap.data.get(i*2+1).unwrap();
-
-            max_x = max_x.max(px);
-            max_y = max_y.max(py);
-            min_x = min_x.min(px);
-            min_y = min_y.min(py);
-        }
- */
-        
         self.x = (umap.min_x + umap.max_x)/2.0;
         self.y = (umap.min_y + umap.max_y)/2.0;
 
@@ -210,6 +194,9 @@ pub struct UmapView {
     camera: Camera2D,
 
     current_selection: Option<Rectangle2D>,
+
+    list_colors: Vec<String>,
+    colorblock: String,
 }
 
 
@@ -227,6 +214,10 @@ impl Component for UmapView {
         ctx.link().send_message(MsgUMAP::GetCoord);
         ctx.link().send_message(MsgUMAP::GetColoring);
 
+        let list_colors = parse_palette();
+        let colorblock = build_colorblock(&list_colors);
+
+    
         Self {
             node_ref: NodeRef::default(),
             umap: None,
@@ -237,7 +228,10 @@ impl Component for UmapView {
             current_coloring: String::new(),
             current_tool: CurrentTool::Select,
             camera: Camera2D::new(),
-            current_selection: None
+            current_selection: None,
+
+            list_colors: list_colors,
+            colorblock: colorblock,
         }
     }
 
@@ -302,7 +296,7 @@ impl Component for UmapView {
                 let (wx,wy) = self.camera.cam2world(x as f32, y as f32);
 
                 //Handle hovering
-                let cp = self.umap_index.get_closest_point(wx, wy);
+                let cp = self.umap_index.get_closest_point(wx, wy);  // sometimes a crash overflow here?? 666
                 //log::debug!("p: {:?}",cp);
                 //log::debug!("{} {}",x,y);
 
@@ -459,12 +453,11 @@ impl Component for UmapView {
                                 //log::debug!("{} {}", px, py);
                                 if px>x1 && px<x2 && py>y1 && py<y2 { /////////////////////// TODO - invert y axis??   ////////////////// points halfway down are at y=500
                                     let point_name = umap.ids.get(i).unwrap().clone();
-    //                                selected_vert.push(i);
                                     selected_vert.push(point_name);
                                 }
                             }
                             //log::debug!("sel-end {:?}",rect);
-                            log::debug!("sel-en!! {:?}",selected_vert);
+                            //log::debug!("sel-en!! {:?}",selected_vert);
 
                             ctx.props().on_cell_clicked.emit(selected_vert);                            
                         }
@@ -525,19 +518,15 @@ impl Component for UmapView {
         //List colors for this factor
         let mut list_levels = Vec::new();
         if let Some(coloring) = self.coloring.colorings.get(&self.current_coloring) {
-            let num_factor_f = coloring.list_levels.len() as f32;
             for (i,lev) in coloring.list_levels.iter().enumerate() {
-                let hue = (i as f32)/num_factor_f;
-                let hsv = (hue, 1.0, 1.0);
-                let rgb = hsv2rgb(hsv);
-                let scolor = format!("background-color:{}; min-width:50px;",rgbvec2string(rgb));
+                let scolor = format!("background-color:{}; min-width:18px;",self.list_colors.get(i).expect("failed to get a color"));
 
                 list_levels.push(html! {
                     <tr>
                         <td style={scolor}>
                             { " " }                       
                         </td> 
-                        <td>
+                        <td style="font-size: 12px;">
                             { lev.clone() }
                         </td>
                     </tr>
@@ -695,6 +684,9 @@ impl Component for UmapView {
             let vert_code = include_str!("./umap.vert");
             let frag_code = include_str!("./umap.frag");
 
+            let vert_code = vert_code.replace("//COLORBLOCK//", &self.colorblock);
+            //log::debug!("{}", vert_code);
+
             //Get position data
             let num_points = umap.num_point;
             let vertices = &umap.data;    
@@ -703,30 +695,35 @@ impl Component for UmapView {
             //Get color data  .. same length??
             let coloring = self.coloring.colorings.get(&self.current_coloring);
             if let Some(coloring) = coloring {
-                //coloring.values.clone() //can we avoid clone?
-
-                let div_color = (coloring.list_levels.len()) as f32;  //+1 needed as 0=1 in HSV  1+ 
+                //let div_color = (coloring.list_levels.len()) as f32;  //+1 needed as 0=1 in HSV  1+ 
                 
+                //log::debug!("{:?}", coloring);
+
                 vertices_color.reserve(num_points*3);
                 for i in 0..num_points {
                     vertices_color.push(*vertices.get(i*2+0).unwrap());
                     vertices_color.push(*vertices.get(i*2+1).unwrap());
 
-                    let color_index = coloring.values.get(i).expect("Color array does not match size");
-                    let hue=(*color_index as f32)/div_color;
+                    let color_index = coloring.values.get(i).expect("Color array does not match size"); //or: just map to 0,1 etc, if not hue
+                    //let hue=(*color_index as f32)/div_color;
                     //log::debug!("hue {}", hue);
-                    vertices_color.push(hue);
+                    //vertices_color.push(hue);
+                    vertices_color.push(*color_index as f32);
+
+
+//                    log::debug!("got i {}", *color_index);
                 }
 
                 //log::debug!("provided colors! num point {} {}", num_points, coloring.list_levels.len());
 
             } else {
+                //log::debug!("coloring missing");
 
                 vertices_color.reserve(num_points*3);
                 for i in 0..num_points {
                     vertices_color.push(*vertices.get(i*2+0).unwrap());
                     vertices_color.push(*vertices.get(i*2+1).unwrap());
-                    vertices_color.push(1.0);
+                    vertices_color.push(0.0);
                 }
 
             };
@@ -741,7 +738,7 @@ impl Component for UmapView {
 
             //Compile vertex shader
             let vert_shader = gl.create_shader(GL::VERTEX_SHADER).unwrap();
-            gl.shader_source(&vert_shader, vert_code);
+            gl.shader_source(&vert_shader, vert_code.as_str());
             gl.compile_shader(&vert_shader);
 
             /*
@@ -844,7 +841,8 @@ pub fn rgbvec2string(c: Vec3) -> String {
 
 
 
-
+////////////////////////////////////////////////////////////
+/// x
 fn mouseevent_get_cx(e: &MouseEvent) -> (f32,f32) {
     let target: Option<EventTarget> = e.target();
     let canvas: HtmlCanvasElement = target.and_then(|t| t.dyn_into::<HtmlCanvasElement>().ok()).expect("wrong type");
@@ -863,3 +861,76 @@ fn mouseevent_get_cx(e: &MouseEvent) -> (f32,f32) {
 
     (x_cam, y_cam)
 }
+
+
+
+////////////////////////////////////////////////////////////
+/// x
+pub fn parse_rgb_int(s: &String) -> (i64, i64, i64) {
+
+    let s = s.as_str();
+    let s_r = s.get(1..3).expect("Could not get R");
+    let s_g = s.get(3..5).expect("Could not get G");
+    let s_b = s.get(5..7).expect("Could not get B");
+    //log::debug!("got r: {} {} {}",s_r, s_g, s_b);
+
+    let r = i64::from_str_radix(s_r, 16).expect("parse error");
+    let g = i64::from_str_radix(s_g, 16).expect("parse error");
+    let b = i64::from_str_radix(s_b, 16).expect("parse error");
+
+    (r,g,b)
+}
+
+
+////////////////////////////////////////////////////////////
+/// x
+pub fn parse_rgb_f64(s: &String) -> (f64, f64, f64) {
+    let (r,g,b) = parse_rgb_int(s);
+    (
+        r as f64 / 255.0,
+        g as f64 / 255.0,
+        b as f64 / 255.0,
+    )
+}
+
+
+////////////////////////////////////////////////////////////
+/// x
+pub fn parse_palette() -> Vec<String> {
+
+    let mut list_colors = Vec::new();
+
+    //Generate palette info
+    let csv_colors = include_str!("./palette.csv");
+    let palette = Cursor::new(csv_colors);
+    let reader = BufReader::new(palette);
+    for line in reader.lines() {
+        let line=line.unwrap();
+        list_colors.push(line);
+        //#RRGGBB 
+    }
+
+    list_colors
+}
+
+
+////////////////////////////////////////////////////////////
+/// x
+pub fn build_colorblock(list_colors: &Vec<String>) -> String {
+
+    //let num_colors = list_colors.len();
+    //let div = 1.0f64 / num_colors as f64;
+
+    let mut colorblock = String::new();
+    for (i,c) in list_colors.iter().enumerate() {
+        //let cutoff = i as f64 * div + div/2.0;
+        let rgb_color = parse_rgb_f64(c);
+        let (r,g,b) = rgb_color;
+        colorblock.push_str(format!("if (a_position.z >= {:.2}) color = vec3({}, {}, {});\n", i as f32, r,g,b).as_str());
+    }
+    
+    //log::debug!("--- {}", colorblock);
+    colorblock
+}
+
+

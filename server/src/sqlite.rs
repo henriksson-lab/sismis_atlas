@@ -7,12 +7,6 @@ use std::sync::Mutex;
 use crate::ServerData;
 
 
-/*
-CREATE TABLE IF NOT EXISTS "clusters"(
-"sequence_id" TEXT, "cluster_id" TEXT, "start" TEXT, "end" TEXT,
- "average_p" TEXT, "max_p" TEXT, "proteins" TEXT, "domains" TEXT,
- "type" TEXT, "filepath" TEXT);
- */
 
 ////////////////////////////////////////////////////////////
 /// Get entries from the strain table given search criteria
@@ -59,57 +53,5 @@ pub fn get_sequence_sql(
     return Ok(all_rows);
 }
         
-
-
-
-
-
-
-
-
-// .mode tabs
-// .import data.tsv my-table
-
-/*
-
-/husky/carroll/exotoxin_atlas
-
-all:
-	echo -e "foo1\tfoo2\tfoo3\tfoo4\tfoo5\tfoo6\tfoo7\tfoo8\tfoo9\tfoo10" > headercluster.tsv.part
-	head -n 1000 final_C11_W10_FET0.05_motus3.clusters.tsv >>  headercluster.tsv.part
-
-	rm newtab.sqlite
-	sqlite3 newtab.sqlite
-	.mode tabs
-	.import headercluster.tsv.part clusters
-
-
-
-	sqlite3 newtab.sqlite
-	.mode tabs
-	.import headercluster.tsv.part clusters
-
-
-    cluster_id
-
-*/
-
-
-/*
-
-query: it should be by gene cluster
-
-It should be a unique column, each row is a gene cluster
-
-
-query by: GUT_GENOME002323-scaffold_1_cluster_1
-
-ANAN16-1_SAMN03842430_METAG_005352-scaffold_3	ANAN16-1_SAMN03842430_METAG_005352-scaffold_3_cluster_1	5987	6682	0.949295150147262	0.949295150147262	ANAN16-1_SAMN03842430_METAG_005352-scaffold_3_8	PF00005;PF02463;PF13304	Unknown	../out_bad2-1/ANAN16-1_SAMN03842430_METAG_005352_out/ANAN16-1_SAMN03842430_METAG_005352.clusters.tsv
-GUT_GENOME002323-scaffold_1	GUT_GENOME002323-scaffold_1_cluster_1	122843	124534	0.958102639632251	0.958102639632251	GUT_GENOME002323-scaffold_1_113	PF00005;PF00664	Unknown	../out_bad2-1/GUT_GENOME002323_out/GUT_GENOME002323.clusters.tsv
-
-*/
-
-
-
 
 
