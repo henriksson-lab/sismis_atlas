@@ -1,6 +1,6 @@
 use std::path::{PathBuf};
 use std::io::{BufRead, BufReader, Read};
-use std::sync::Mutex;
+use std::sync::{Mutex};
 
 use actix_web::web::BytesMut;
 use actix_web::web::BufMut;
@@ -101,7 +101,7 @@ pub async fn convert_genbank(fname: &PathBuf, fname_zip: &PathBuf) -> Result<(),
 
 ////////////////////////////////////////////////////////////
 /// x
-pub fn query_genbank(
+pub fn query_genbank_goodbutslow(
     server_data: &Data<Mutex<ServerData>>,
     req: &ClusterRequest
 ) -> anyhow::Result<Vec<Genbank>> { 
@@ -150,3 +150,5 @@ pub fn query_genbank(
 //    Ok("booo".to_string())
 }
         
+
+

@@ -1,4 +1,5 @@
 pub mod genbank;
+pub mod genbank_async;
 pub mod sqlite;
 pub mod umap;
 
@@ -14,7 +15,7 @@ use std::sync::Mutex;
 
 use crate::genbank::convert_genbank;
 use crate::sqlite::get_sequence_sql;
-use crate::genbank::query_genbank;
+use crate::genbank_async::query_genbank;
 use crate::umap::load_umap_data;
 
 use rusqlite::{Connection, OpenFlags};
@@ -68,8 +69,9 @@ async fn get_genbank(server_data: Data<Mutex<ServerData>>, req_body: web::Json<C
 
     println!("{:?}",req_body);
     let Json(req) = req_body;
-    let ret = query_genbank(&server_data, &req).
-            expect("failed to access genbank"); 
+    let ret = query_genbank(&server_data, &req)
+        .await
+        .expect("failed to access genbank"); 
 
     serde_json::to_string(&ret)
 }
