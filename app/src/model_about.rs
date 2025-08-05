@@ -15,11 +15,21 @@ impl Model {
                 </div>
                 <div class="landingdiv">
                     <h1>
-                        {"Hello, world!"}
+                        {"What is the FLExo Atlas?"}
                     </h1>
                     <p>
-                        {"(It's me)"}
+                        {"The FLExo Atlas contains >5 million exotoxins from nearly 700k prokaryotic (meta)genomes 
+                        (i.e., the mOTUs v3 database), detected using FLExo, our machine-learning-based exotoxin annotation tool!"}
                     </p>
+                    <h1>
+                        {"Citation"}
+                    </h1>
+                    <p>
+                        {"If you found FLExo and/or the FLExo Atlas useful, please cite:"}
+                    </p>
+                    <blockquote>
+                        {"The FLExo Atlas. XXX."}
+                    </blockquote>
                 </div>
                 <br />
             </div>
