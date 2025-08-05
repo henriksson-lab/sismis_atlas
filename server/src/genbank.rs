@@ -23,7 +23,7 @@ fn parse_name(line: &String) -> Option<String> {
     let line = &line["LOCUS       ".len()..];
     let mut iter = line.split_ascii_whitespace();
     let name = iter.next().expect("Could not get name");
-    println!("  name: {}",name);
+    //println!("  name: {}",name);
     Some(name.to_string())
 //  "LOCUS       GUT_GENOME002323-scaffold_16_cluster_1"  then space etc
 }
@@ -47,12 +47,20 @@ pub async fn convert_genbank(fname: &PathBuf, fname_zip: &PathBuf) -> Result<(),
         let len = reader.read_line(&mut line)?;
         if len>0 {
             if line.starts_with("//") {
+                //We have reached the end of this genbank. put it in the list
                 b.put(line.as_bytes());
                 if let Some(pname) = name {
-                    //println!("One gbk done");
+                    //println!("One gbk done {}", pname);
                     archive.append(pname.as_str(), &options, &mut b.as_ref()).await?;
+
+                    //Start with the next one
                     name = None;
                     b.clear();
+
+                    done_files += 1;
+                    if done_files%1000 == 0 {
+                        println!("# files done: {}",done_files);
+                    }
 
                 } else {
                     panic!("Missing name")
@@ -69,10 +77,6 @@ pub async fn convert_genbank(fname: &PathBuf, fname_zip: &PathBuf) -> Result<(),
             break;
         }
 
-        done_files += 1;
-        if done_files%10 == 0 {
-            println!("# files done: {}",done_files);
-        }
     }
 
     //If there is a final entry
