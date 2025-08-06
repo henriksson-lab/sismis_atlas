@@ -14,11 +14,6 @@ pub struct Cluster {
     pub start: String,
     pub end: String,
     pub average_p: String,
-    pub max_p: String,
-    pub proteins: String,
-    pub domains: String,
-    pub type2: String,
-    pub filepath: String,
 }
 
 

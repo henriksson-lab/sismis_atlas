@@ -90,12 +90,6 @@ impl Model {
                         <td> { c.start.clone() } </td>
                         <td> { c.end.clone() } </td>
                         <td> { c.average_p.clone() } </td>
-
-                        <td> { c.max_p.clone() } </td>
-                        <td> { c.proteins.clone() } </td>
-                        <td> { c.domains.clone() } </td>
-                        <td> { c.type2.clone() } </td>
-                        <td> { c.filepath.clone() } </td>
                     </tr>
                 }
             }).collect::<Html>();
@@ -108,13 +102,6 @@ impl Model {
                         <th> {"start"} </th>
                         <th> {"end"} </th>
                         <th> {"average_p"} </th>
-
-                        <th> {"max_p"} </th>
-                        <th> {"proteins"} </th>
-                        <th> {"domains"} </th>
-                        <th> {"type2"} </th>
-                        <th> {"filepath"} </th>
-
                     </tr>
                     { list_rows }
                 </table>

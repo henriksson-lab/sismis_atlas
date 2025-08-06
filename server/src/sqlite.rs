@@ -30,11 +30,6 @@ pub fn get_sequence_sql(
                 start: row.get(2)?,
                 end: row.get(3)?,
                 average_p: row.get(4)?,
-                max_p: row.get(5)?,
-                proteins: row.get(6)?,
-                domains: row.get(7)?,
-                type2: row.get(8)?,
-                filepath: row.get(9)?,
             };
             Ok(out)
         })?;
