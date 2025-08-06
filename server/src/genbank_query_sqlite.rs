@@ -17,7 +17,7 @@ pub async fn query_genbank_sqlite(
     req: &ClusterRequest
 ) -> anyhow::Result<Vec<Genbank>> { 
 
-    println!("query_genbank_sqlite");
+    //println!("query_genbank_sqlite");
 
     let config_file = {
         let server_data =server_data.lock().unwrap();
@@ -33,7 +33,7 @@ pub async fn query_genbank_sqlite(
     let mut all_rows = Vec::new();
     for sequence_id in &req.cluster_id {
 
-        println!("Making query");
+        //println!("Making query");
 
         let rows = stmt.query_map([sequence_id], |row| {
             let out = Genbank {
@@ -43,7 +43,7 @@ pub async fn query_genbank_sqlite(
             Ok(out)
         })?;
 
-        println!("done query");
+        //println!("done query");
 
 
         for row in rows {

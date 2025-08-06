@@ -142,7 +142,10 @@ impl Model {
 
                         let h= html! { 
                             <text x={xtext.to_string()}  y={ytext.to_string()} fill="white" font-size="8">
-                                { show_text }
+                                { show_text.clone() }
+                                <title>
+                                    { show_text }
+                                </title>
                             </text>
                         };
                         list_features.push(h);

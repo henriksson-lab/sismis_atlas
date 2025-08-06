@@ -72,8 +72,6 @@ async fn get_sequence(server_data: Data<Mutex<ServerData>>, req_body: web::Json<
 async fn get_genbank(server_data: Data<Mutex<ServerData>>, req_body: web::Json<ClusterRequest>) -> impl Responder {
     //info!("metadata: {:?}", &server_data.db_metadata);
 
-    println!("wtf");
-
     println!("{:?}",req_body);
     let Json(req) = req_body;
     /* 
@@ -81,12 +79,9 @@ async fn get_genbank(server_data: Data<Mutex<ServerData>>, req_body: web::Json<C
         .await
         .expect("failed to access genbank"); */
 
-    println!("here");
     let ret = query_genbank_sqlite(&server_data, &req)
         .await
         .expect("failed to access genbank"); 
-
-
     serde_json::to_string(&ret)
 }
 
