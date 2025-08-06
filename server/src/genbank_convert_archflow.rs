@@ -1,19 +1,17 @@
 use std::path::{PathBuf};
-use std::io::{BufRead, BufReader, Read};
-use std::sync::{Mutex};
+use std::io::{BufRead, BufReader};
 
 use actix_web::web::BytesMut;
 use actix_web::web::BufMut;
-use actix_web::web::Data;
 
-use my_web_app::{ClusterRequest, Genbank};
 use tokio::fs::File;
-use crate::ServerData;
+
 
 use archflow::{
  compress::FileOptions, compress::tokio::archive::ZipArchive, compression::CompressionMethod,
  error::ArchiveError,
 };
+
 
 
 
@@ -28,12 +26,12 @@ fn parse_name(line: &String) -> Option<String> {
 //  "LOCUS       GUT_GENOME002323-scaffold_16_cluster_1"  then space etc
 }
 
-pub async fn convert_genbank(fname: &PathBuf, fname_zip: &PathBuf) -> Result<(), ArchiveError> {
+pub async fn convert_genbank_rszip(fname: &PathBuf, fname_zip: &PathBuf) -> Result<(), ArchiveError> {
 
     let mut done_files = 0;
 
     let file_zip = File::create(fname_zip).await?;
-    let options = FileOptions::default().compression_method(CompressionMethod::Deflate());
+    let options = FileOptions::default().compression_method(CompressionMethod::Deflate()).large_file(true);
     let mut archive = ZipArchive::new_streamable(file_zip);
 
     let f = std::fs::File::open(fname)?;
@@ -94,61 +92,3 @@ pub async fn convert_genbank(fname: &PathBuf, fname_zip: &PathBuf) -> Result<(),
 
     Ok(())
 }
-
-
-
-
-
-////////////////////////////////////////////////////////////
-/// x
-pub fn query_genbank_goodbutslow(
-    server_data: &Data<Mutex<ServerData>>,
-    req: &ClusterRequest
-) -> anyhow::Result<Vec<Genbank>> { 
-
-
-    println!("genbank about to open zip");
-
-    let path_zip = {
-        let server_data =server_data.lock().unwrap();
-        server_data.path_zip.clone()
-    };
-
-    let file = std::fs::File::open(&path_zip).unwrap();
-    let mut archive = zip::ZipArchive::new(file).unwrap();
-
-    //GUT_GENOME277127-scaffold_21_cluster_1
-//    let e ="GUT_GENOME277127-scaffold_21_cluster_1".to_string();
-
-    println!("genbank zip is open");
-
-    //Gather all files
-    let mut list_out = Vec::new();
-    for search_id in &req.cluster_id {
-
-        println!("genbank get one in zip");
-
-        let mut zfile = archive.by_name(search_id);
-        let mut out = Vec::new();
-        if let Ok(zfile) = &mut zfile {
-            println!("genbank reading");
-            let _cnt = zfile.read_to_end(&mut out)?;
-            println!("genbank reading done");
-
-            let ret = Genbank {
-                data: String::from_utf8_lossy(out.as_slice()).to_string()  //support storing as bytes?
-            };
-            println!("genbank pushing");
-
-            list_out.push(ret);
-        } else {
-            println!("Failed to get one genbank file");
-        }
-    }
-
-    Ok(list_out)
-//    Ok("booo".to_string())
-}
-        
-
-
