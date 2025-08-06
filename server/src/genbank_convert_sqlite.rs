@@ -1,19 +1,19 @@
 use std::path::{PathBuf};
 use std::io::{BufRead, BufReader};
 
-use actix_web::web::BytesMut;
-use actix_web::web::BufMut;
-
-use tokio::fs::File;
+use my_web_app::ConfigFile;
+use rusqlite::{Connection, Statement};
 
 
-use archflow::{
- compress::FileOptions, compress::tokio::archive::ZipArchive, compression::CompressionMethod,
- error::ArchiveError,
-};
 
+fn insert_sql(stmt: &mut Statement, id: &String, data: &String){
+    stmt.execute(
+        (&id, &data),
+    ).expect("Failed to insert");
 
-////////// TODO
+    println!("f: {}",data); //check that \n is handled!!
+}
+
 
 ////////////////////////////////////////////////////////////
 /// x
@@ -26,18 +26,36 @@ fn parse_name(line: &String) -> Option<String> {
 //  "LOCUS       GUT_GENOME002323-scaffold_16_cluster_1"  then space etc
 }
 
-pub async fn convert_genbank_sqlite(fname: &PathBuf, fname_zip: &PathBuf) -> Result<(), ArchiveError> {
+
+pub fn convert_genbank_sqlite(fname: &PathBuf, config_file: &ConfigFile) -> anyhow::Result<()> {
 
     let mut done_files = 0;
 
-    let file_zip = File::create(fname_zip).await?;
-    let options = FileOptions::default().compression_method(CompressionMethod::Deflate()).large_file(true);
-    let mut archive = ZipArchive::new_streamable(file_zip);
+    // Open SQL database
+    let path_store = std::path::Path::new(&config_file.data);
+    let path_sql = path_store.join(std::path::Path::new("genbank.sqlite"));
+
+    if path_sql.exists() {
+        println!("genbank sqlite already exists");
+    }
+
+    let conn = Connection::open(&path_sql).expect("Could not open SQL database");
+
+    conn.execute(
+        "CREATE TABLE genbank (
+            cluster_id   TEXT NOT NULL, 
+            data         TEXT NOT NULL
+        )",
+        (), // empty list of parameters.
+    ).expect("failed to create table"); // PRIMARY KEY -- can add later
+
+    let mut stmt_insert = conn.prepare("INSERT INTO genbank VALUES (?1,?2)").expect("Failed to prepare statement");  //note, in sqlite = is fine and required to use the index it seems. other databases need LIKE
+
 
     let f = std::fs::File::open(fname)?;
     let mut reader = BufReader::new(f);
 
-    let mut b=BytesMut::new();
+    let mut b=String::new();//BytesMut::new();
     let mut name: Option<String> = None;
 
     loop {
@@ -46,10 +64,10 @@ pub async fn convert_genbank_sqlite(fname: &PathBuf, fname_zip: &PathBuf) -> Res
         if len>0 {
             if line.starts_with("//") {
                 //We have reached the end of this genbank. put it in the list
-                b.put(line.as_bytes());
+                b.push_str(line.as_str());
                 if let Some(pname) = name {
                     //println!("One gbk done {}", pname);
-                    archive.append(pname.as_str(), &options, &mut b.as_ref()).await?;
+                    insert_sql(&mut stmt_insert, &pname, &b);
 
                     //Start with the next one
                     name = None;
@@ -68,7 +86,7 @@ pub async fn convert_genbank_sqlite(fname: &PathBuf, fname_zip: &PathBuf) -> Res
                 if name.is_none() {
                     name = parse_name(&line);
                 }
-                b.put(line.as_bytes());
+                b.push_str(line.as_str());
             }
         } else { 
             //we are done
@@ -80,15 +98,20 @@ pub async fn convert_genbank_sqlite(fname: &PathBuf, fname_zip: &PathBuf) -> Res
     //If there is a final entry
     if let Some(pname) = name {
         println!("One final gbk done");
-        archive.append(pname.as_str(), &options, &mut b.as_ref()).await?;
+        insert_sql(&mut stmt_insert, &pname, &b);
         b.clear();
     }
 
-    println!("# files done total: {}, finalizing",done_files);
+    println!("# files done total: {}, indexing",done_files);
 
-    archive.finalize().await?;
+    conn.execute(
+        "CREATE INDEX ind
+             ON genbank (cluster_id);
+        )",
+        (), // empty list of parameters.
+    ).expect("failed to index table");
 
-    println!("Archive finalized");
+    println!("sqlite genbank finalized");
 
     Ok(())
 }

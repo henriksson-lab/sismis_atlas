@@ -16,7 +16,7 @@ use actix_web::{Responder};
 use my_web_app::{ClusterRequest, ConfigFile, UmapData, UmapMetadata};
 use std::sync::Mutex;
 
-use crate::genbank_convert_rszip::convert_genbank_rszip;
+use crate::genbank_convert_sqlite::convert_genbank_sqlite;
 use crate::sqlite::get_sequence_sql;
 use crate::genbank_query_unzip::query_genbank;
 use crate::umap::load_umap_data;
@@ -133,8 +133,9 @@ async fn main() -> std::io::Result<()> {
     if !gbk_zip.exists() {
         println!("Converting genbank to zip");
         //convert_genbank_archflow(&gbk_in, &gbk_zip).await.expect("Could not parse genbank");
-        convert_genbank_rszip(&gbk_in, &gbk_zip).expect("Could not parse genbank");
+        //convert_genbank_rszip(&gbk_in, &gbk_zip).expect("Could not parse genbank");
     }
+    _ = convert_genbank_sqlite(&gbk_in, &config_file);
 
 
 
