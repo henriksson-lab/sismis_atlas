@@ -2,7 +2,7 @@ pub mod genbank_query_rszip;
 pub mod genbank_query_unzip;
 pub mod sqlite;
 pub mod umap;
-pub mod genbank_convert_zip;
+pub mod genbank_convert_archflow;
 
 use std::path::{PathBuf};
 use std::io::{Cursor};
@@ -14,7 +14,7 @@ use actix_web::{Responder};
 use my_web_app::{ClusterRequest, ConfigFile, UmapData, UmapMetadata};
 use std::sync::Mutex;
 
-use crate::genbank_convert_zip::convert_genbank_rszip;
+use crate::genbank_convert_archflow::convert_genbank_rszip;
 use crate::sqlite::get_sequence_sql;
 use crate::genbank_query_unzip::query_genbank;
 use crate::umap::load_umap_data;
