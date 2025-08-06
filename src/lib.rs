@@ -141,7 +141,7 @@ pub struct ClusterRequest {
 
 ////////////////////////////////////////////////////////////
 /// x
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ConfigFile {
     pub data: PathBuf,
     pub bind: String,

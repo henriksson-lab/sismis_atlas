@@ -11,7 +11,7 @@ fn insert_sql(stmt: &mut Statement, id: &String, data: &String){
         (&id, &data),
     ).expect("Failed to insert");
 
-    println!("f: {}",data); //check that \n is handled!!
+    //println!("f: {}",data); //check that \n is handled!!
 }
 
 
@@ -37,6 +37,7 @@ pub fn convert_genbank_sqlite(fname: &PathBuf, config_file: &ConfigFile) -> anyh
 
     if path_sql.exists() {
         println!("genbank sqlite already exists");
+        return Ok(());
     }
 
     let conn = Connection::open(&path_sql).expect("Could not open SQL database");
@@ -107,7 +108,7 @@ pub fn convert_genbank_sqlite(fname: &PathBuf, config_file: &ConfigFile) -> anyh
     conn.execute(
         "CREATE INDEX ind
              ON genbank (cluster_id);
-        )",
+        ",
         (), // empty list of parameters.
     ).expect("failed to index table");
 

@@ -1,5 +1,6 @@
 pub mod genbank_query_rszip;
 pub mod genbank_query_unzip;
+pub mod genbank_query_sqlite;
 pub mod genbank_convert_archflow;
 pub mod genbank_convert_rszip;
 pub mod genbank_convert_sqlite;
@@ -17,8 +18,8 @@ use my_web_app::{ClusterRequest, ConfigFile, UmapData, UmapMetadata};
 use std::sync::Mutex;
 
 use crate::genbank_convert_sqlite::convert_genbank_sqlite;
+use crate::genbank_query_sqlite::query_genbank_sqlite;
 use crate::sqlite::get_sequence_sql;
-use crate::genbank_query_unzip::query_genbank;
 use crate::umap::load_umap_data;
 
 use rusqlite::{Connection, OpenFlags};
@@ -30,6 +31,7 @@ pub struct ServerData {
     path_zip: PathBuf,
     umeta: UmapMetadata,
     umap_points: UmapData,
+    config_file: ConfigFile,
 }
 
 
@@ -70,11 +72,20 @@ async fn get_sequence(server_data: Data<Mutex<ServerData>>, req_body: web::Json<
 async fn get_genbank(server_data: Data<Mutex<ServerData>>, req_body: web::Json<ClusterRequest>) -> impl Responder {
     //info!("metadata: {:?}", &server_data.db_metadata);
 
+    println!("wtf");
+
     println!("{:?}",req_body);
     let Json(req) = req_body;
+    /* 
     let ret = query_genbank(&server_data, &req)
         .await
+        .expect("failed to access genbank"); */
+
+    println!("here");
+    let ret = query_genbank_sqlite(&server_data, &req)
+        .await
         .expect("failed to access genbank"); 
+
 
     serde_json::to_string(&ret)
 }
@@ -146,6 +157,7 @@ async fn main() -> std::io::Result<()> {
             path_zip: gbk_zip,
             umeta: umeta,
             umap_points: umap_points,
+            config_file: config_file.clone()
         }
     ));
 

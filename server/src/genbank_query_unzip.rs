@@ -15,7 +15,7 @@ use crate::ServerData;
 
 ////////////////////////////////////////////////////////////
 /// x
-pub async fn query_genbank(
+pub async fn query_genbank_unzip(
     server_data: &Data<Mutex<ServerData>>,
     req: &ClusterRequest
 ) -> anyhow::Result<Vec<Genbank>> { 
