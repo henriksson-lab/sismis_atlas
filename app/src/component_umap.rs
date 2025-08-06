@@ -955,6 +955,8 @@ pub fn build_colorblock(list_colors: &Vec<String>) -> String {
         let (r,g,b) = rgb_color;
         colorblock.push_str(format!("if (a_position.z >= {:.2}) color = vec3({}, {}, {});\n", i as f32, r,g,b).as_str());
     }
+
+ 
     
     //log::debug!("--- {}", colorblock);
     colorblock

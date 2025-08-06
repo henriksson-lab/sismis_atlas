@@ -13,7 +13,7 @@ use archflow::{
 };
 
 
-
+////////// TODO
 
 ////////////////////////////////////////////////////////////
 /// x
@@ -26,7 +26,7 @@ fn parse_name(line: &String) -> Option<String> {
 //  "LOCUS       GUT_GENOME002323-scaffold_16_cluster_1"  then space etc
 }
 
-pub async fn convert_genbank_archflow(fname: &PathBuf, fname_zip: &PathBuf) -> Result<(), ArchiveError> {
+pub async fn convert_genbank_sqlite(fname: &PathBuf, fname_zip: &PathBuf) -> Result<(), ArchiveError> {
 
     let mut done_files = 0;
 
