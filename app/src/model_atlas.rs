@@ -83,13 +83,15 @@ impl Model {
                     <tr> 
                         <td> { c.sequence_id.clone() } </td>
                         <td>
-                            <a onclick={on_click_cluster}>
+                            <a onclick={on_click_cluster} style="color:blue">
                              { c.cluster_id.clone() }
                             </a>
                         </td>
                         <td> { c.start.clone() } </td>
                         <td> { c.end.clone() } </td>
                         <td> { c.average_p.clone() } </td>
+                        <td> { c.gtdb_phylum.clone() } </td>
+                        <td> { c.gtdb_species.clone() } </td>
                     </tr>
                 }
             }).collect::<Html>();
@@ -102,6 +104,8 @@ impl Model {
                         <th> {"start"} </th>
                         <th> {"end"} </th>
                         <th> {"average_p"} </th>
+                        <th> {"GTDB_phylum"} </th>
+                        <th> {"GTDB_species"} </th>
                     </tr>
                     { list_rows }
                 </table>

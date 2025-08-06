@@ -14,6 +14,12 @@ pub struct Cluster {
     pub start: String,
     pub end: String,
     pub average_p: String,
+
+    #[serde(rename = "GTDB_phylum")]
+    pub gtdb_phylum: String,
+    
+    #[serde(rename = "GTDB_species")]
+    pub gtdb_species: String,
 }
 
 

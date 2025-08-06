@@ -30,6 +30,8 @@ pub fn get_sequence_sql(
                 start: row.get(2)?,
                 end: row.get(3)?,
                 average_p: row.get(4)?,
+                gtdb_phylum: row.get(5)?,
+                gtdb_species: row.get(6)?,
             };
             Ok(out)
         })?;
