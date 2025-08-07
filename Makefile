@@ -11,3 +11,8 @@ build:
 
 serve: build
 	cargo run
+
+install:
+	curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+	cargo install trunk
+	cargo install cargo-watch
