@@ -2,4 +2,12 @@
 	mkdir -p app/assets
 	cd app; trunk watch
 2:
-	cargo watch -w server -w src -x "run"
+	cargo watch -w server -w src -w config.json -x "run"
+
+build:
+	mkdir -p app/assets
+	cd app; trunk build
+	cargo build
+
+serve: build
+	cargo run
