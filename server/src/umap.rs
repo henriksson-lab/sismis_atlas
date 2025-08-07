@@ -38,7 +38,7 @@ pub fn load_umap_data(config_file: &ConfigFile) -> (UmapData, UmapMetadata) {
 
     let mut list_seurat = Vec::new();
     let mut list_vfdb = Vec::new();
-    //let mut list_gfc_id = Vec::new(); /// too large
+    //let mut list_gfc_id = Vec::new(); 
 
     let mut ids: Vec<String> = Vec::new();
 
@@ -92,6 +92,7 @@ pub fn load_umap_data(config_file: &ConfigFile) -> (UmapData, UmapMetadata) {
         num_point: num_points, 
         data: vertices,
         ids: ids,
+        //gcf_ids: list_gfc_id,  
 
         max_x: max_x,
         max_y: max_y,

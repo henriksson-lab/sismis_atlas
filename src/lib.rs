@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 /// 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Cluster {
+    pub gcf_id: String,
     pub sequence_id: String,
     pub cluster_id: String,
     pub start: String,
@@ -117,7 +118,9 @@ impl UmapMetadata {
 pub struct UmapData {
     pub num_point: usize,
     pub data: Vec<f32>,
-    pub ids: Vec<String>,
+    pub ids: Vec<String>, //cluster_id
+
+    //pub gcf_ids: Vec<String>, ////if we want to save space: could turn into into int, then convert from/to GCF0000001. can also skip serialization to keep on server-side
 
     pub max_x: f32,
     pub max_y: f32,

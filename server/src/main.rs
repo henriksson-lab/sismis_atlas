@@ -1,13 +1,8 @@
-pub mod genbank_query_rszip;
-pub mod genbank_query_unzip;
 pub mod genbank_query_sqlite;
-pub mod genbank_convert_archflow;
-pub mod genbank_convert_rszip;
 pub mod genbank_convert_sqlite;
 pub mod sqlite;
 pub mod umap;
 
-use std::path::{PathBuf};
 use std::io::{Cursor};
 
 use actix_files::Files;
@@ -17,9 +12,9 @@ use actix_web::{Responder};
 use my_web_app::{ClusterRequest, ConfigFile, UmapData, UmapMetadata};
 use std::sync::Mutex;
 
-use crate::genbank_convert_sqlite::convert_genbank_sqlite;
+use crate::genbank_convert_sqlite::{convert_clusters_sqlite, convert_genbank_sqlite};
 use crate::genbank_query_sqlite::query_genbank_sqlite;
-use crate::sqlite::get_sequence_sql;
+use crate::sqlite::{get_sequence_allgcf_sql};
 use crate::umap::load_umap_data;
 
 use rusqlite::{Connection, OpenFlags};
@@ -28,7 +23,7 @@ use rusqlite::{Connection, OpenFlags};
 /// Backend state
 pub struct ServerData {
     conn: Connection,
-    path_zip: PathBuf,
+    //path_zip: PathBuf,
     umeta: UmapMetadata,
     umap_points: UmapData,
     config_file: ConfigFile,
@@ -55,13 +50,16 @@ async fn get_coloring(server_data: Data<Mutex<ServerData>>) -> impl Responder {
 #[post("/get_sequence")]
 async fn get_sequence(server_data: Data<Mutex<ServerData>>, req_body: web::Json<ClusterRequest>) -> impl Responder {
 
-    println!("{:?}",req_body);
+    println!("get_sequence {:?}",req_body);
     let Json(req) = req_body;
 
     //info!("metadata: {:?}", &server_data.db_metadata);
-    let ret = get_sequence_sql(&server_data, &req).
-        expect("failed to access sql");
-        //expect("failed to get cluster");
+    //let ret = get_sequence_sql(&server_data, &req).
+    //    expect("failed to access sql for get_sequence");
+
+    let ret = get_sequence_allgcf_sql(&server_data, &req).
+        expect("failed to access sql for get_sequence");
+
     serde_json::to_string(&ret)
 }
 
@@ -74,10 +72,6 @@ async fn get_genbank(server_data: Data<Mutex<ServerData>>, req_body: web::Json<C
 
     println!("{:?}",req_body);
     let Json(req) = req_body;
-    /* 
-    let ret = query_genbank(&server_data, &req)
-        .await
-        .expect("failed to access genbank"); */
 
     let ret = query_genbank_sqlite(&server_data, &req)
         .await
@@ -124,8 +118,7 @@ async fn main() -> std::io::Result<()> {
     // Read the config file   .. or revert to previous?
     let config_file = serde_json::from_reader(Cursor::new(include_bytes!("../../config.json"))).expect("Could not open config.json");
 
-    //UMAP meta
-    let (umap_points,umeta) = load_umap_data(&config_file);
+    convert_clusters_sqlite(&config_file).unwrap();
 
     // Open SQL database
     let path_store = std::path::Path::new(&config_file.data);
@@ -135,21 +128,24 @@ async fn main() -> std::io::Result<()> {
 
     // Convert data files if needed
     let gbk_in = config_file.data.join("genbank.gbk");
-    let gbk_zip = config_file.data.join("genbank.zip");
-    if !gbk_zip.exists() {
-        println!("Converting genbank to zip");
+    //let gbk_zip = config_file.data.join("genbank.zip");
+    //if !gbk_zip.exists() {
+        //println!("Converting genbank to zip");
         //convert_genbank_archflow(&gbk_in, &gbk_zip).await.expect("Could not parse genbank");
         //convert_genbank_rszip(&gbk_in, &gbk_zip).expect("Could not parse genbank");
-    }
-    _ = convert_genbank_sqlite(&gbk_in, &config_file);
+    //}
+    convert_genbank_sqlite(&gbk_in, &config_file).unwrap();
 
 
+
+    //UMAP meta
+    let (umap_points,umeta) = load_umap_data(&config_file);
 
     //Gather server data / state
     let data = Data::new(Mutex::new(
         ServerData {
             conn,
-            path_zip: gbk_zip,
+            //path_zip: gbk_zip,
             umeta: umeta,
             umap_points: umap_points,
             config_file: config_file.clone()
