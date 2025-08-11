@@ -64,7 +64,7 @@ impl Component for Model {
 
 
         Self {
-            current_page: CurrentPage::Atlas,
+            current_page: CurrentPage::Home,
             current_genbank: None,
             current_table_meta: None,
         }
