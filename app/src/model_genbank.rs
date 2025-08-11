@@ -141,7 +141,7 @@ impl Model {
                         }
 
                         let h= html! { 
-                            <text x={xtext.to_string()}  y={ytext.to_string()} fill="white" font-size="8">
+                            <text x={xtext.to_string()}  y={ytext.to_string()} fill="white" font-size="8" font-family="'Roboto', sans-serif">
                                 { show_text.clone() }
                                 <title>
                                     { show_text }
