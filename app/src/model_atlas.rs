@@ -81,6 +81,7 @@ impl Model {
 
                 html! {
                     <tr> 
+                        <td> { c.gcf_id.clone() } </td>
                         <td> { c.sequence_id.clone() } </td>
                         <td>
                             <a onclick={on_click_cluster} style="color:blue">
@@ -99,6 +100,7 @@ impl Model {
             html! {
                 <table>
                     <tr>
+                        <th> {"GCF_id"} </th>
                         <th> {"sequence_id"} </th>
                         <th> {"cluster_id"} </th>
                         <th> {"start"} </th>
