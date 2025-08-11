@@ -80,26 +80,27 @@ impl Model {
 
 
                 html! {
-                    <tr style="padding: 15px; font-size: calc(8px + 1vmin);"> 
-                        <td> { c.gcf_id.clone() } </td>
-                        <td> { c.sequence_id.clone() } </td>
-                        <td>
-                            <a onclick={on_click_cluster} style="color:blue; cursor: pointer;">
-                             { c.cluster_id.clone() }
-                            </a>
-                        </td>
-                        <td> { c.start.clone() } </td>
-                        <td> { c.end.clone() } </td>
-                        <td> { c.average_p.clone() } </td>
-                        <td> { c.gtdb_phylum.clone() } </td>
-                        <td> { c.gtdb_species.clone() } </td>
-                    </tr>
+                            <tr> 
+                                <td> { c.gcf_id.clone() } </td>
+                                <td> { c.sequence_id.clone() } </td>
+                                <td>
+                                    <a onclick={on_click_cluster} style="color:blue; cursor: pointer;">
+                                        { c.cluster_id.clone() }
+                                    </a>
+                                </td>
+                                <td> { c.start.clone() } </td>
+                                <td> { c.end.clone() } </td>
+                                <td> { c.average_p.clone() } </td>
+                                <td> { c.gtdb_phylum.clone() } </td>
+                                <td> { c.gtdb_species.clone() } </td>
+                            </tr>
                 }
             }).collect::<Html>();
 
             html! {
+                <div style="overflow-x:auto;">
                 <table>
-                    <tr style="padding: 15px; font-size: calc(8px + 1vmin);">
+                    <tr>
                         <th> {"GCF_id"} </th>
                         <th> {"sequence_id"} </th>
                         <th> {"cluster_id"} </th>
@@ -111,6 +112,7 @@ impl Model {
                     </tr>
                     { list_rows }
                 </table>
+                </div>
             }
 
         } else {
