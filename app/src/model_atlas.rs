@@ -54,6 +54,7 @@ impl Model {
                 <div class="App-divider">
                     {"Selected metadata row: GenBank"}
                 </div>
+                
                 { self.view_genbank_table(ctx) }
 
 

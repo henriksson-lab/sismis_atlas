@@ -24,9 +24,18 @@ impl Model {
 
             list_genbank.iter().map(|val| {
                 html!{
-                    <pre> 
-                        { val.data.clone() } 
-                    </pre>
+                    <div>
+                        <p>
+                        </p>
+                        <div class="downloadbutton">
+                            {"Download GenBank"}
+                        </div>
+                        <p>
+                        </p>
+                        <pre> 
+                            { val.data.clone() } 
+                        </pre>
+                    </div>
                 }
             }).collect::<Html>()
 
