@@ -44,15 +44,15 @@ impl Model {
                 <UmapView on_cell_hovered={on_cell_hovered} on_cell_clicked={on_cell_clicked}/> //// we really do not want to re-render this if needed! how to avoid?
 
                 <div class="App-divider">
-                    {"Selected exotoxin(s): metadata"}
+                    {"Selected UMAP point(s): metadata"}
                 </div>
                 { self.view_cluster_table(ctx) }
                 <div class="App-divider">
-                    {"Selected exotoxin(s): Pfam domains"}
+                    {"Selected metadata row: Pfam domains"}
                 </div>
                 { self.view_genbank_svgs(ctx) }
                 <div class="App-divider">
-                    {"Selected exotoxin(s): GenBank"}
+                    {"Selected metadata row: GenBank"}
                 </div>
                 { self.view_genbank_table(ctx) }
 

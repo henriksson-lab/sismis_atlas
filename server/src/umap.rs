@@ -22,6 +22,9 @@ pub struct CsvSeqMeta {
     #[serde(rename(deserialize = "Seurat"))]
     pub seurat: String,
 
+    #[serde(rename(deserialize = "GTDB_phylum"))]
+    pub gtdb_phylum: String,
+
     #[serde(rename(deserialize = "VFDB"))]
     pub vfdb: String,
 }
@@ -37,6 +40,7 @@ pub fn load_umap_data(config_file: &ConfigFile) -> (UmapData, UmapMetadata) {
 
 
     let mut list_seurat = Vec::new();
+    let mut list_phylum = Vec::new();
     let mut list_vfdb = Vec::new();
     //let mut list_gfc_id = Vec::new(); 
 
@@ -54,6 +58,7 @@ pub fn load_umap_data(config_file: &ConfigFile) -> (UmapData, UmapMetadata) {
 
         //General metadata
         list_seurat.push(record.seurat);
+        list_phylum.push(record.gtdb_phylum);
         list_vfdb.push(record.vfdb);
         //list_gfc_id.push(record.gcf_id);
 
@@ -67,6 +72,7 @@ pub fn load_umap_data(config_file: &ConfigFile) -> (UmapData, UmapMetadata) {
     //Factorize strings to reduce data size
     let mut umeta = UmapMetadata::new();
     umeta.add_and_factorize(&"Seurat".to_string(), &list_seurat);
+    umeta.add_and_factorize(&"GTDB_phylum".to_string(), &list_phylum);
     umeta.add_and_factorize(&"VFDB".to_string(), &list_vfdb);
     //umeta.add_and_factorize(&"GCF_ID".to_string(), &list_gfc_id);
 
