@@ -80,7 +80,7 @@ impl Model {
 
 
                 html! {
-                    <tr> 
+                    <tr style="padding: 15px; font-size: calc(8px + 1vmin);"> 
                         <td> { c.gcf_id.clone() } </td>
                         <td> { c.sequence_id.clone() } </td>
                         <td>
@@ -99,7 +99,7 @@ impl Model {
 
             html! {
                 <table>
-                    <tr>
+                    <tr style="padding: 15px; font-size: calc(8px + 1vmin);">
                         <th> {"GCF_id"} </th>
                         <th> {"sequence_id"} </th>
                         <th> {"cluster_id"} </th>

@@ -35,7 +35,7 @@ impl Model {
                     <h1>
                         {"🔍 Usage"}
                     </h1>
-                    <p style="font-weight: bold; font-style: italic;">
+                    <p style="font-style: italic;">
                         {"To browse the FLExo Atlas via the interactive UMAP:"}
                     </p>
                     <p>
