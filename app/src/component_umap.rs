@@ -810,6 +810,7 @@ impl Component for UmapView {
 
             // can we attach one more vector???
 
+            // to make round points, need to draw square https://stackoverflow.com/questions/7237086/opengl-es-2-0-equivalent-for-es-1-0-circles-using-gl-point-smooth
             gl.draw_arrays(GL::POINTS, 0, num_points as i32);
         }
 
