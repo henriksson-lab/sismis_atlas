@@ -61,15 +61,14 @@ impl DatabaseColumnMeta {
         for e in inlist {
             set_colors.insert(e.clone());
         }
+        self.list_levels = set_colors.iter().cloned().collect();
+        self.list_levels.sort_by(|a, b| human_sort::compare(a.as_str(),b.as_str()));
+//        self.list_levels = list_levels;            
 
         //Sort levels, set up map
-        let mut i=0;
-        for e in set_colors {
-            self.map_levels.insert(e.clone(), i);
-            self.list_levels.push(e);
-            i += 1;
+        for (i,e) in self.list_levels.iter().enumerate() {
+            self.map_levels.insert(e.clone(), i as u8);
         }
-        self.list_levels.sort_by(|a, b| human_sort::compare(a.as_str(),b.as_str()));
 
         //Map to factors
         let mut outlist = Vec::new();
