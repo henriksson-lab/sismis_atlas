@@ -25,19 +25,27 @@
 
 .downloadbutton {
   align-items: center;
-  background-image: linear-gradient(144deg, #5B42F3, #0096ff, 50%,#00DDEB);
-  border: 0;
+  background: #36393e;
+  border: 10px solid;
+  border-image-slice: 1;
+  border-width: 8px;
+  border-image-source: linear-gradient(to left, #179966, #40dba0);
+  /*
   border-radius: 8px;
   box-shadow: rgba(151, 65, 252, 0.2) 0 15px 30px -5px;
+  */
   box-sizing: border-box;
   color: #FFFFFF;
   display: flex;
   font-family: 'Roboto', sans-serif;
-  font-size: 12px;
+  font-size: 24px;
   justify-content: center;
   line-height: 1em;
   max-width: 500px;
   min-width: 50px;
+  /*
+  width: 100%;
+  */
   padding: 5px 5px;
   text-decoration: none;
   user-select: none;
@@ -47,10 +55,6 @@
   cursor: pointer;
   margin: auto;
 }
-
-
-
-
 
 
 /* ***************************** */
@@ -222,6 +226,7 @@ color: #ffffff;
 .App-divider {
   background-image: linear-gradient(144deg, #0b5236, #179966, 50%,#40dba0);
   min-height: 3vh;
+  width: auto;
   display: flex;
   flex-direction: row;
   align-items: normal;

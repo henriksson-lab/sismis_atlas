@@ -54,7 +54,7 @@ impl Model {
                 </p>
 
                 <p style="color: white;">
-                    {">5 million exotoxins from nearly 700k prokaryotic (meta)genomes"}
+                    {">5 million exotoxins and exotoxin-associated genes from nearly 700k prokaryotic (meta)genomes"}
                 </p>
 
                 <p style="color: #40dba0;">

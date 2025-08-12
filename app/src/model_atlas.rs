@@ -44,16 +44,17 @@ impl Model {
                 <UmapView on_cell_hovered={on_cell_hovered} on_cell_clicked={on_cell_clicked}/> //// we really do not want to re-render this if needed! how to avoid?
 
                 <div class="App-divider">
-                    {"Selected exotoxin(s): metadata"}
+                    {"Selected UMAP point(s): metadata"}
                 </div>
                 { self.view_cluster_table(ctx) }
                 <div class="App-divider">
-                    {"Selected exotoxin(s): Pfam domains"}
+                    {"Selected metadata row: Pfam domains"}
                 </div>
                 { self.view_genbank_svgs(ctx) }
                 <div class="App-divider">
-                    {"Selected exotoxin(s): GenBank"}
+                    {"Selected metadata row: GenBank"}
                 </div>
+                
                 { self.view_genbank_table(ctx) }
 
 
@@ -80,25 +81,28 @@ impl Model {
 
 
                 html! {
-                    <tr> 
-                        <td> { c.sequence_id.clone() } </td>
-                        <td>
-                            <a onclick={on_click_cluster} style="color:blue">
-                             { c.cluster_id.clone() }
-                            </a>
-                        </td>
-                        <td> { c.start.clone() } </td>
-                        <td> { c.end.clone() } </td>
-                        <td> { c.average_p.clone() } </td>
-                        <td> { c.gtdb_phylum.clone() } </td>
-                        <td> { c.gtdb_species.clone() } </td>
-                    </tr>
+                            <tr> 
+                                <td> { c.gcf_id.clone() } </td>
+                                <td> { c.sequence_id.clone() } </td>
+                                <td>
+                                    <a onclick={on_click_cluster} style="color:blue; cursor: pointer;">
+                                        { c.cluster_id.clone() }
+                                    </a>
+                                </td>
+                                <td> { c.start.clone() } </td>
+                                <td> { c.end.clone() } </td>
+                                <td> { c.average_p.clone() } </td>
+                                <td> { c.gtdb_phylum.clone() } </td>
+                                <td> { c.gtdb_species.clone() } </td>
+                            </tr>
                 }
             }).collect::<Html>();
 
             html! {
+                <div style="overflow-x:auto;">
                 <table>
                     <tr>
+                        <th> {"GCF_id"} </th>
                         <th> {"sequence_id"} </th>
                         <th> {"cluster_id"} </th>
                         <th> {"start"} </th>
@@ -109,6 +113,7 @@ impl Model {
                     </tr>
                     { list_rows }
                 </table>
+                </div>
             }
 
         } else {

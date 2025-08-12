@@ -24,9 +24,18 @@ impl Model {
 
             list_genbank.iter().map(|val| {
                 html!{
-                    <pre> 
-                        { val.data.clone() } 
-                    </pre>
+                    <div>
+                        <p>
+                        </p>
+                        <div class="downloadbutton">
+                            {"Download GenBank"}
+                        </div>
+                        <p>
+                        </p>
+                        <pre> 
+                            { val.data.clone() } 
+                        </pre>
+                    </div>
                 }
             }).collect::<Html>()
 
@@ -101,8 +110,8 @@ impl Model {
                         let y2 = cur_y + arrow_height;
                         let ymid = (y1+y2)/2.0;
 
-
-                        let h= html! { 
+/*
+                        let h = html! { 
                             <polygon points={format!("{},{} {},{} {},{} {},{} {},{}",
                                 x1,y1,
                                 xmid,y1,
@@ -111,6 +120,33 @@ impl Model {
                                 x1,y2,                        
                             )} stroke="black" fill="gray"/>
                         };
+*/
+
+                        let h = if f.kind != "CDS" {
+                            html! { 
+                                <polygon points={format!("{},{} {},{} {},{} {},{} {},{}",
+                                    x1,y1,
+                                    xmid,y1,
+                                    x2,ymid,
+                                    xmid,y2,
+                                    x1,y2,                        
+                                )} stroke="black" fill="#cd1076"/>
+                        
+                            }
+                        } else {
+                            html! { 
+                                <polygon points={format!("{},{} {},{} {},{} {},{} {},{}",
+                                    x1,y1,
+                                    xmid,y1,
+                                    x2,ymid,
+                                    xmid,y2,
+                                    x1,y2,                        
+                                )} stroke="black" fill="#1e90ff"/>
+                            }
+                        };
+
+
+
                         list_features.push(h);
 
 
@@ -141,7 +177,7 @@ impl Model {
                         }
 
                         let h= html! { 
-                            <text x={xtext.to_string()}  y={ytext.to_string()} fill="white" font-size="8">
+                            <text x={xtext.to_string()}  y={ytext.to_string()} fill="white" font-size="8" font-family="'Roboto', sans-serif">
                                 { show_text.clone() }
                                 <title>
                                     { show_text }

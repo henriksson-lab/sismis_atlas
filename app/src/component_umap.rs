@@ -625,7 +625,7 @@ impl Component for UmapView {
                 //Overlay SVG
                 <div style="position: absolute; left:0; top:0; display: flex; pointer-events: none; ">  
                     <svg style="width: 800px; height: 500px; pointer-events: none;"> // note: WxH must cover canvas!!  
-                        <text x=10 y=15>
+                        <text x=10 y=15 style="font-family: 'Roboto', sans-serif;">
                             { format!("{}", if let Some(c) = &self.last_cell {c.clone()} else {String::new()}) }
                         </text>
                         { html_select }
