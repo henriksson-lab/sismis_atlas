@@ -7,6 +7,10 @@ use my_web_app::Genbank;
 use yew::prelude::*;
 use gb_io::{reader::SeqReader, seq::{Feature, Seq}};
 
+use web_sys::{window, HtmlElement};
+use wasm_bindgen::JsCast;
+use web_sys::js_sys::{Array};
+use web_sys::{wasm_bindgen::JsValue, Blob, BlobPropertyBag};
 
 //see https://github.com/gamcil/clinker
 //https://github.com/art-egorov/lovis4u
@@ -23,11 +27,18 @@ impl Model {
         if let Some(list_genbank) = &self.current_genbank {
 
             list_genbank.iter().map(|val| {
+
+                let cloned_gb = val.clone();
+                let mouseclicked = Callback::from(move |_e: MouseEvent | { 
+                    download_genbank(&cloned_gb);
+                });
+
+
                 html!{
                     <div>
                         <p>
                         </p>
-                        <div class="downloadbutton">
+                        <div class="downloadbutton" onclick={mouseclicked}>
                             {"Download GenBank"}
                         </div>
                         <p>
@@ -204,7 +215,10 @@ impl Model {
 
 
     }
+
     
+
+
 
 }
 
@@ -266,3 +280,47 @@ impl FeatureLane {
         }
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+////////////////////////////////////////////////////////////
+/// Download table data
+pub fn download_genbank(gb_data: &Genbank){
+
+    let window = window().expect("no window");
+    let document = window.document().expect("should have a document on window");
+
+    let csv_data = &gb_data.data;
+
+    // Creating a Blob for having a csv file format and passing the data with type
+    let blob_properties = BlobPropertyBag::new();
+    blob_properties.set_type("text/csv");  
+
+    let blob_parts = Array::new();
+    blob_parts.push(&JsValue::from_str(csv_data.as_str()));
+    let blob = Blob::new_with_buffer_source_sequence_and_options(&blob_parts, &blob_properties).unwrap();
+
+    // Creating an object for downloading url
+    let url = web_sys::Url::create_object_url_with_blob(&blob).expect("Could not create url");
+
+    // Creating an anchor(a) tag of HTML
+    let a:HtmlElement = document.create_element("a").expect("could not create a").dyn_into().unwrap();
+
+    // Passing the blob downloading url 
+    a.set_attribute("href", &url).expect("Could not set attribute");
+
+    // Setting the anchor tag attribute for downloading and passing the download file name
+    a.set_attribute("download", "gene.gb").expect("Could not set attribute");
+
+    // Performing a download with click
+    a.click();
+}
+

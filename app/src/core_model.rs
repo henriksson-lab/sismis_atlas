@@ -154,10 +154,7 @@ impl Component for Model {
                 ctx.link().send_message(Msg::GetTableData(id.clone()));
 
                 true
-            },
-
-
-
+            }
 
         }
     }

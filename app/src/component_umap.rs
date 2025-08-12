@@ -376,7 +376,7 @@ impl Component for UmapView {
             },
 
             MsgUMAP::SetColoring(coloring) => {
-                log::debug!("{:?}",coloring);
+                //log::debug!("{:?}",coloring);
                 self.coloring = coloring;                
                 self.current_coloring = self.coloring.colorings.keys().next().expect("No colors available").clone();
                 true
