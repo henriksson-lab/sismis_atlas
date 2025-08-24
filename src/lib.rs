@@ -15,6 +15,8 @@ pub struct Cluster {
     pub start: String,
     pub end: String,
     pub average_p: String,
+    pub max_p: String,
+    pub sismis_type: String,
 
     #[serde(rename = "GTDB_phylum")]
     pub gtdb_phylum: String,

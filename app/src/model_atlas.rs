@@ -38,7 +38,7 @@ impl Model {
             <div>
             
                 <div class="App-divider">
-                    {"FLExo UMAP"}
+                    {"Sismis UMAP"}
                 </div>
 
                 <UmapView on_cell_hovered={on_cell_hovered} on_cell_clicked={on_cell_clicked}/> //// we really do not want to re-render this if needed! how to avoid?
@@ -81,20 +81,22 @@ impl Model {
 
 
                 html! {
-                            <tr> 
-                                <td> { c.gcf_id.clone() } </td>
-                                <td> { c.sequence_id.clone() } </td>
-                                <td>
-                                    <a onclick={on_click_cluster} style="color:blue; cursor: pointer;">
-                                        { c.cluster_id.clone() }
-                                    </a>
-                                </td>
-                                <td> { c.start.clone() } </td>
-                                <td> { c.end.clone() } </td>
-                                <td> { c.average_p.clone() } </td>
-                                <td> { c.gtdb_phylum.clone() } </td>
-                                <td> { c.gtdb_species.clone() } </td>
-                            </tr>
+                    <tr> 
+                        <td> { c.gcf_id.clone() } </td>
+                        <td> { c.sequence_id.clone() } </td>
+                        <td>
+                            <a onclick={on_click_cluster} style="color:blue; cursor: pointer;">
+                                { c.cluster_id.clone() }
+                            </a>
+                        </td>
+                        <td> { c.start.clone() } </td>
+                        <td> { c.end.clone() } </td>
+                        <td> { c.average_p.clone() } </td>
+                        <td> { c.max_p.clone() } </td>
+                        <td> { c.sismis_type.clone() } </td>
+                        <td> { c.gtdb_phylum.clone() } </td>
+                        <td> { c.gtdb_species.clone() } </td>
+                    </tr>
                 }
             }).collect::<Html>();
 
@@ -108,6 +110,8 @@ impl Model {
                         <th> {"start"} </th>
                         <th> {"end"} </th>
                         <th> {"average_p"} </th>
+                        <th> {"max_p"} </th>
+                        <th> {"sismis_type"} </th>
                         <th> {"GTDB_phylum"} </th>
                         <th> {"GTDB_species"} </th>
                     </tr>

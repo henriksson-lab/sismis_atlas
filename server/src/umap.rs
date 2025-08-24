@@ -12,21 +12,28 @@ use crate::ConfigFile;
 #[derive(Debug, Deserialize, Serialize)]
 pub struct CsvSeqMeta {
 
-    #[serde(rename(deserialize = "GCF_ID"))]
+    #[serde(rename(deserialize = "gcf_id"))]
     pub gcf_id: String,
 
     pub cluster_id: String,
+
+    #[serde(rename(deserialize = "umap_1"))]
     pub x: f32,
+
+    #[serde(rename(deserialize = "umap_2"))]
     pub y: f32,
 
     #[serde(rename(deserialize = "Seurat"))]
     pub seurat: String,
 
-    #[serde(rename(deserialize = "GTDB_phylum"))]
+    #[serde(rename(deserialize = "Sismis_Type"))]
+    pub sismis_type: String,
+
+    #[serde(rename(deserialize = "GTDB_Phylum"))]
     pub gtdb_phylum: String,
 
-    #[serde(rename(deserialize = "VFDB"))]
-    pub vfdb: String,
+    #[serde(rename(deserialize = "TXSSdb_Type"))]
+    pub txssdb_type: String,
 }
 
 
@@ -41,8 +48,8 @@ pub fn load_umap_data(config_file: &ConfigFile) -> (UmapData, UmapMetadata) {
 
     let mut list_seurat = Vec::new();
     let mut list_phylum = Vec::new();
-    let mut list_vfdb = Vec::new();
-    //let mut list_gfc_id = Vec::new(); 
+    let mut list_txssdb_type = Vec::new();
+    let mut list_sismis_type = Vec::new();
 
     let mut ids: Vec<String> = Vec::new();
 
@@ -59,7 +66,8 @@ pub fn load_umap_data(config_file: &ConfigFile) -> (UmapData, UmapMetadata) {
         //General metadata
         list_seurat.push(record.seurat);
         list_phylum.push(record.gtdb_phylum);
-        list_vfdb.push(record.vfdb);
+        list_txssdb_type.push(record.txssdb_type);
+        list_sismis_type.push(record.sismis_type);
         //list_gfc_id.push(record.gcf_id);
 
         //Point data
@@ -72,11 +80,9 @@ pub fn load_umap_data(config_file: &ConfigFile) -> (UmapData, UmapMetadata) {
     //Factorize strings to reduce data size
     let mut umeta = UmapMetadata::new();
     umeta.add_and_factorize(&"Seurat".to_string(), &list_seurat);
+    umeta.add_and_factorize(&"Sismis_Type".to_string(), &list_sismis_type);
     umeta.add_and_factorize(&"GTDB_phylum".to_string(), &list_phylum);
-    umeta.add_and_factorize(&"VFDB".to_string(), &list_vfdb);
-    //umeta.add_and_factorize(&"GCF_ID".to_string(), &list_gfc_id);
-
-
+    umeta.add_and_factorize(&"TXSSdb_Type".to_string(), &list_txssdb_type);
 
     //Figure out UMAP point range
     let mut max_x = f32::MIN;
