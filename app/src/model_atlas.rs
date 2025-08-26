@@ -85,7 +85,7 @@ impl Model {
                         <td> { c.gcf_id.clone() } </td>
                         <td> { c.sequence_id.clone() } </td>
                         <td>
-                            <a onclick={on_click_cluster} style="color:blue; cursor: pointer;">
+                            <a onclick={on_click_cluster} style="color:#88CCEE; cursor: pointer;">
                                 { c.cluster_id.clone() }
                             </a>
                         </td>
