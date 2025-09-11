@@ -1,11 +1,11 @@
-# Webapp in Rust
+# The Sismis Atlas
 
-Template for a web app completly in rust. The server is created with actix-web, the frontend with yew.
+## 🔖 Citation
 
-Put shared structs and functionality into the root crate, app or server specific stuff into the corresponding app or server crates.
+If you found the Sismis Atlas useful, please cite [our preprint](https://www.biorxiv.org/content/10.1101/2025.09.09.675188v1)! 🤗
 
-Run `cargo watch -w server -w src -x "run"` in the root folder of the repository to start the server and restart on changes. In another shel run `trunk watch` inside the app folder to rebuild the wasm code on changes.
+To cite Sismis and/or the Sismis Atlas:
 
-Features:
-- actix is setup to server the static files produced by trunk
-- a service worker for pwa functionality is included
+> Martin Larralde, Florian Albrecht, Josefin Blom, Johan Henriksson, Laura M Carroll. 2025. Scalable and interpretable secretion system annotation with Sismis. *bioRxiv* 2025.09.09.675188. doi: https://doi.org/10.1101/2025.09.09.675188.
+
+
