@@ -30,15 +30,11 @@ impl Model {
                         {"If you found Sismis and/or the Sismis Atlas useful, please cite:"}
                     </p>
                     <blockquote>
-<<<<<<< HEAD
                         {"Martin Larralde, Florian Albrecht, Josefin Blom, 
                         Johan Henriksson, Laura M. Carroll. 2025. 
                         Scalable and interpretable secretion system annotation with Sismis. 
                         bioRxiv doi: https://doi.org/10.1101/2025.09.09.675188."
                         }
-=======
-                        {"Martin Larralde, Florian Albrecht, Josefin Blom, Johan Henriksson, Laura M Carroll. 2025. Scalable and interpretable secretion system annotation with Sismis. bioRxiv 2025.09.09.675188. doi: https://doi.org/10.1101/2025.09.09.675188."}
->>>>>>> 91b813f70ead5ca2bce72a7156749b75d9c959b8
                     </blockquote>
 
                     <h1>
