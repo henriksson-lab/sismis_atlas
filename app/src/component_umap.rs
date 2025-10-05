@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::io::BufRead;
 use std::io::Cursor;
 use std::io::BufReader;
@@ -195,10 +196,22 @@ pub struct UmapView {
 
     current_selection: Option<Rectangle2D>,
 
-    list_colors: Vec<String>,
-    colorblock: String,
+    color_dict: HashMap<String, Vec<String>>,
+    // list_colors: Vec<String>,
+    // colorblock: String,
 }
 
+impl UmapView {
+    fn get_current_palette(&self) -> &Vec<String> {
+        self.color_dict.get(
+            &self.current_coloring
+        ).or(       
+            self.color_dict.get("default")
+        ).expect(
+            &format!{"Cannot find palette /{}/", self.current_coloring}
+        ) //.clone()
+    } 
+}
 
 
 ////////////////////////////////////////////////////////////
@@ -214,8 +227,21 @@ impl Component for UmapView {
         ctx.link().send_message(MsgUMAP::GetCoord);
         ctx.link().send_message(MsgUMAP::GetColoring);
 
-        let list_colors = parse_palette();
-        let colorblock = build_colorblock(&list_colors);
+        let mut color_dict: HashMap<String, Vec<String>> = HashMap::new();
+
+        color_dict.insert(
+            "default".into(), 
+            parse_palette(include_str!("./palette.csv"))
+        );
+        color_dict.insert(
+            "TXSSdb_Type".into(), 
+            parse_palette(include_str!("./palette_txssdb.csv"))
+        );
+        color_dict.insert(
+            "Sismis_Type".into(), 
+            parse_palette(include_str!("./palette_sismis.csv"))
+        );
+        // let colorblock = build_colorblock(&list_colors);
 
     
         Self {
@@ -230,8 +256,10 @@ impl Component for UmapView {
             camera: Camera2D::new(),
             current_selection: None,
 
-            list_colors: list_colors,
-            colorblock: colorblock,
+            color_dict: color_dict,
+
+            // list_colors: list_colors,
+            // colorblock: colorblock,
         }
     }
 
@@ -515,6 +543,8 @@ impl Component for UmapView {
             });
         }
 
+        let list_colors = self.get_current_palette();
+
         //List colors for this factor
         let mut list_levels = Vec::new();
         if let Some(coloring) = self.coloring.colorings.get(&self.current_coloring) {
@@ -529,7 +559,7 @@ impl Component for UmapView {
                 for j in 0..num_cols {
                     let cur_level = j*max_rows + i;
                     if cur_level < coloring.list_levels.len() {
-                        let scolor = format!("background-color:{}; min-width:18px;",self.list_colors.get(cur_level).expect("failed to get a color"));
+                        let scolor = format!("background-color:{}; min-width:18px;",list_colors.get(cur_level).expect("failed to get a color"));
                         let level_name = coloring.list_levels.get(cur_level).expect("failed to get a level");
 
                         list_cols.push(html! {
@@ -711,7 +741,10 @@ impl Component for UmapView {
             let vert_code = include_str!("./umap.vert");
             let frag_code = include_str!("./umap.frag");
 
-            let vert_code = vert_code.replace("//COLORBLOCK//", &self.colorblock);
+            let list_colors = self.get_current_palette();
+            let colorblock = build_colorblock(&list_colors);
+
+            let vert_code = vert_code.replace("//COLORBLOCK//", &colorblock);
             //log::debug!("{}", vert_code);
 
             //Get position data
@@ -924,12 +957,12 @@ pub fn parse_rgb_f64(s: &String) -> (f64, f64, f64) {
 
 ////////////////////////////////////////////////////////////
 /// x
-pub fn parse_palette() -> Vec<String> {
+pub fn parse_palette(csv_colors:&str) -> Vec<String> {
 
     let mut list_colors = Vec::new();
 
     //Generate palette info
-    let csv_colors = include_str!("./palette.csv");
+    // let csv_colors = include_str!("./palette.csv");
     let palette = Cursor::new(csv_colors);
     let reader = BufReader::new(palette);
     for line in reader.lines() {
